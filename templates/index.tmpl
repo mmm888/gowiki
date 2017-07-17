@@ -1,0 +1,12 @@
+{{ template "base_top.tmpl" }}
+
+<body>
+    <h1>Root</h1>
+    <ul>
+        <li>{{ . }}</li>
+    </ul>
+    <form method="post" action="/?action=EDIT">
+        <input type="submit" value="編集">
+    </form>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{{ template "base_top.tmpl" }}
+    <div class="container">
+        <h1>ファイルアップロードテスト</h1>
+        <form method="post" action="/save" enctype="multipart/form-data">
+            <fieldset>
+                <input type="file" name="upload_files" id="upload_files" multiple="multiple">
+                <input type="submit" name="submit" value="アップロード">
+            </fieldset>
+        </form>
+    </div>
+    </body>
+</html>
