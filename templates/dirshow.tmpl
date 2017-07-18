@@ -4,11 +4,13 @@
     <h1>Root</h1>
     <ul>
         {{ range . }}
-            <li><a href=./{{ . }}>{{ . }}</a></li>
+            <li>{{ . }}</li>
         {{ end }}
     </ul>
+<!--
     <form method="post" action="/?action=EDIT">
         <input type="submit" value="編集">
     </form>
+-->
 </body>
 </html>
