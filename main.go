@@ -20,6 +20,17 @@ var (
 	path []string
 )
 
+type DirShow struct {
+	Dirname    string
+	Uploadpath string
+	Filename   []string
+}
+
+type FileShow struct {
+	Editpath string
+	Content  string
+}
+
 func RootHandler(w http.ResponseWriter, r *http.Request) {
 	action := r.FormValue("action")
 	if action == "EDIT" {
@@ -54,24 +65,35 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func dirHandler(w http.ResponseWriter, r *http.Request) {
-	var filepath []string
-	dirname := mux.Vars(r)["dir"]
-	nowdir := cd + dirname
+	action := r.FormValue("action")
+	if action == "UPLOAD" {
+		t, _ := template.ParseFiles("templates/upload.tmpl", "templates/base_top.tmpl")
+		err := t.Execute(w, nil)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return
+	}
+	var dirshow DirShow
+	dirshow.Dirname = mux.Vars(r)["dir"]
+	nowdir := cd + dirshow.Dirname
+	dirshow.Uploadpath = "/" + dirshow.Dirname + "?action=UPLOAD"
 	files, err := ioutil.ReadDir(nowdir)
 	if err != nil {
 		fmt.Println(err)
 	}
 	for _, file := range files {
-		filepath = append(filepath, file.Name())
+		dirshow.Filename = append(dirshow.Filename, file.Name())
 	}
 	t := template.Must(template.ParseFiles("templates/dirshow.tmpl", "templates/base_top.tmpl"))
-	err = t.Execute(w, filepath)
+	err = t.Execute(w, dirshow)
 	if err != nil {
 		panic(err)
 	}
 }
 
 func fileHandler(w http.ResponseWriter, r *http.Request) {
+	var fileshow FileShow
 	dirname := mux.Vars(r)["dir"]
 	filename := mux.Vars(r)["file"]
 	nowpath := cd + dirname + "/" + filename
@@ -79,9 +101,28 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	w.Header().Add("Content-Type", "text/html")
+	action := r.FormValue("action")
+	if action == "EDIT" {
+		t, _ := template.ParseFiles("templates/edit_file.tmpl", "templates/base_top.tmpl")
+		err := t.Execute(w, string(file))
+		if err != nil {
+			fmt.Println(err)
+		}
+		return
+	}
+	funcMap := template.FuncMap{
+		"safehtml": func(text string) template.HTML { return template.HTML(text) },
+	}
+	t := template.Must(template.New("fileshow.tmpl").Funcs(funcMap).ParseFiles("templates/fileshow.tmpl", "templates/base_top.tmpl"))
 	file_md := blackfriday.MarkdownCommon(file)
-	fmt.Fprintln(w, string(file_md))
+	fileshow.Editpath = "/" + dirname + "/" + filename + "?action=EDIT"
+	fileshow.Content = string(file_md)
+	fmt.Println(filename)
+	fmt.Println(fileshow.Editpath)
+	err = t.Execute(w, fileshow)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {

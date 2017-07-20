@@ -1,0 +1,12 @@
+{{ template "base_top.tmpl" }}
+    <div class="container">
+        <h1>ファイル</h1>
+        <form method="post" action="/save" enctype="multipart/form-data">
+            <fieldset>
+                <textarea name="content" rows="20" cols="100">{{ . }}</textarea>
+                <input type="submit" name="submit" value="更新">
+            </fieldset>
+        </form>
+    </div>
+    </body>
+</html>

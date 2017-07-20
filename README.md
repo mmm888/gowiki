@@ -8,6 +8,7 @@
   * /dir/file: md preview
   * /dir/file?edit: md edit
 
-* set link for /dir
 * upload file for /dir
+  * /, /dir
 * edit file for /dir/file
+  * /dir/file?action=SAVE ?

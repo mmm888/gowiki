@@ -1,16 +1,16 @@
 {{ template "base_top.tmpl" }}
 
+
 <body>
     <h1>Root</h1>
+    {{ $dir := .Dirname }}
     <ul>
-        {{ range . }}
-            <li>{{ . }}</li>
+        {{ range .Filename }}
+            <li><a href={{ $dir }}/{{ . }}>{{ . }}</a></li>
         {{ end }}
     </ul>
-<!--
-    <form method="post" action="/?action=EDIT">
-        <input type="submit" value="編集">
+    <form method="post" action={{ .Uploadpath  }}>
+        <input type="submit" value="アップロード">
     </form>
--->
 </body>
 </html>
