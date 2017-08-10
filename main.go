@@ -10,12 +10,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 
 	"github.com/gorilla/mux"
 	"github.com/russross/blackfriday"
 )
 
 var (
+	repo string
 	cd   string
 	path []string
 )
@@ -37,7 +39,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 		t := template.Must(template.ParseFiles("templates/edit_dir.tmpl", "templates/base_top.tmpl"))
 		err := t.Execute(w, nil)
 		if err != nil {
-			panic(err)
+			log.Fatalf("error: %s", err.Error())
 		}
 		return
 	} else if action == "CREATE" {
@@ -50,7 +52,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		err := os.Mkdir(cd+dirname, 0755)
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalf("error: %s", err.Error())
 		}
 		path = append(path, dirname)
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -60,8 +62,31 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	t := template.Must(template.ParseFiles("templates/index.tmpl", "templates/base_top.tmpl"))
 	err := t.Execute(w, path)
 	if err != nil {
-		panic(err)
 	}
+}
+
+func Initialize(w http.ResponseWriter, r *http.Request) {
+	t := template.Must(template.ParseFiles("templates/initialize.tmpl", "templates/base_top.tmpl"))
+	err := t.Execute(w, nil)
+	if err != nil {
+		log.Fatalf("error: %s", err.Error())
+	}
+
+}
+
+func Settings(w http.ResponseWriter, r *http.Request) {
+	rname := r.FormValue("rname")
+	_, err := exec.Command("git", "clone", rname).Output()
+	if err != nil {
+		//	http.Redirect(w, r, "/error", http.StatusFound)
+		log.Fatalf("Could not clone %s: %s", rname, err.Error())
+	}
+	repo = rname
+	http.Redirect(w, r, "/repo", http.StatusFound)
+}
+
+func Repository(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "aaabbbccc")
 }
 
 func dirHandler(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +95,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request) {
 		t, _ := template.ParseFiles("templates/upload.tmpl", "templates/base_top.tmpl")
 		err := t.Execute(w, nil)
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalf("error: %s", err.Error())
 		}
 		return
 	}
@@ -80,7 +105,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request) {
 	dirshow.Uploadpath = "/" + dirshow.Dirname + "?action=UPLOAD"
 	files, err := ioutil.ReadDir(nowdir)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("error: %s", err.Error())
 	}
 	for _, file := range files {
 		dirshow.Filename = append(dirshow.Filename, file.Name())
@@ -88,7 +113,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request) {
 	t := template.Must(template.ParseFiles("templates/dirshow.tmpl", "templates/base_top.tmpl"))
 	err = t.Execute(w, dirshow)
 	if err != nil {
-		panic(err)
+		log.Fatalf("error: %s", err.Error())
 	}
 }
 
@@ -99,14 +124,14 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 	nowpath := cd + dirname + "/" + filename
 	file, err := ioutil.ReadFile(nowpath)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("error: %s", err.Error())
 	}
 	action := r.FormValue("action")
 	if action == "EDIT" {
 		t, _ := template.ParseFiles("templates/edit_file.tmpl", "templates/base_top.tmpl")
 		err := t.Execute(w, string(file))
 		if err != nil {
-			fmt.Println(err)
+			log.Fatalf("error: %s", err.Error())
 		}
 		return
 	}
@@ -121,7 +146,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(fileshow.Editpath)
 	err = t.Execute(w, fileshow)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("error: %s", err.Error())
 	}
 }
 
@@ -164,11 +189,11 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("templates/upload.tmpl", "templates/base_top.tmpl")
 	err := t.Execute(w, nil)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("error: %s", err.Error())
 	}
 }
 
-func errorPageHandler(w http.ResponseWriter, r *http.Request) {
+func ErrorPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "<p>Internal Server Error</p>")
 }
 
@@ -180,7 +205,7 @@ func main() {
 	cd = "data/"
 	files, err := ioutil.ReadDir(cd)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("error: %s", err.Error())
 	}
 	for _, file := range files {
 		path = append(path, file.Name())
@@ -188,11 +213,18 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", RootHandler)
+	r.HandleFunc("/init", Initialize)
+	r.HandleFunc("/setting", Settings)
 	r.HandleFunc("/upload", uploadHandler)
 	r.HandleFunc("/save", saveHandler)
-	r.HandleFunc("/errorPage", errorPageHandler)
+	r.HandleFunc("/error", ErrorPage)
 	r.HandleFunc("/{dir}", dirHandler)
 	r.HandleFunc("/{dir}/{file}", fileHandler)
+
+	r.HandleFunc("/repo/", Repository)
+
+	//	p := r.PathPrefix("/repo").Subrouter()
+	//	p.HandleFunc("/", Repository)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
