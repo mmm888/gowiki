@@ -83,7 +83,7 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Could not clone %s: %s", rname, err.Error())
 	}
 	repo = rname
-	http.Redirect(w, r, "/repo", http.StatusFound)
+	http.Redirect(w, r, "/repo/", http.StatusFound)
 }
 
 func Repository(w http.ResponseWriter, r *http.Request) {
