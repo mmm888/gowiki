@@ -1,5 +1,5 @@
-hash: b563fa22f0bcae5a33b6e554cafc1f26362246cdc90b531ad147f9d2ae0dfeac
-updated: 2017-08-10T14:44:38.077171026+09:00
+hash: 785be17b6ee912c23d8da8d54f8e2cbd54f56472fc528ddd5c828522b8e08438
+updated: 2017-08-29T13:52:15.623416608+09:00
 imports:
 - name: github.com/gorilla/context
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
@@ -7,4 +7,6 @@ imports:
   version: ac112f7d75a0714af1bd86ab17749b31f7809640
 - name: github.com/russross/blackfriday
   version: 4048872b16cc0fc2c5fd9eacf0ed2c2fedaa0c8c
+- name: github.com/unrolled/render
+  version: a0ec58421ddf111bd7efd3b7087399ca7d5da2f1
 testImports: []

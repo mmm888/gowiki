@@ -14,9 +14,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/russross/blackfriday"
+	"github.com/unrolled/render"
 )
 
 var (
+	re   *render.Render
 	repo string
 	cd   string
 	path []string
@@ -36,10 +38,9 @@ type FileShow struct {
 func RootHandler(w http.ResponseWriter, r *http.Request) {
 	action := r.FormValue("action")
 	if action == "EDIT" {
-		t := template.Must(template.ParseFiles("templates/edit_dir.tmpl", "templates/base_top.tmpl"))
-		err := t.Execute(w, nil)
+		err := re.HTML(w, http.StatusOK, "edit_dir", nil)
 		if err != nil {
-			log.Printf("error: %s", err.Error())
+			http.Redirect(w, r, "/error", http.StatusFound)
 		}
 		return
 	} else if action == "CREATE" {
@@ -58,21 +59,17 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-
-	t := template.Must(template.ParseFiles("templates/index.tmpl", "templates/base_top.tmpl"))
-	err := t.Execute(w, path)
+	err := re.HTML(w, http.StatusOK, "index", path)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
+		http.Redirect(w, r, "/error", http.StatusFound)
 	}
 }
 
 func Initialize(w http.ResponseWriter, r *http.Request) {
-	t := template.Must(template.ParseFiles("templates/initialize.tmpl", "templates/base_top.tmpl"))
-	err := t.Execute(w, nil)
+	err := re.HTML(w, http.StatusOK, "initialize", nil)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
+		http.Redirect(w, r, "/error", http.StatusFound)
 	}
-
 }
 
 func Settings(w http.ResponseWriter, r *http.Request) {
@@ -113,10 +110,9 @@ func Repository(w http.ResponseWriter, r *http.Request) {
 func dirHandler(w http.ResponseWriter, r *http.Request) {
 	action := r.FormValue("action")
 	if action == "UPLOAD" {
-		t, _ := template.ParseFiles("templates/upload.tmpl", "templates/base_top.tmpl")
-		err := t.Execute(w, nil)
+		err := re.HTML(w, http.StatusOK, "upload", nil)
 		if err != nil {
-			log.Printf("error: %s", err.Error())
+			http.Redirect(w, r, "/error", http.StatusFound)
 		}
 		return
 	}
@@ -131,10 +127,10 @@ func dirHandler(w http.ResponseWriter, r *http.Request) {
 	for _, file := range files {
 		dirshow.Filename = append(dirshow.Filename, file.Name())
 	}
-	t := template.Must(template.ParseFiles("templates/dirshow.tmpl", "templates/base_top.tmpl"))
-	err = t.Execute(w, dirshow)
+
+	err = re.HTML(w, http.StatusOK, "dirshow", dirshow)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
+		http.Redirect(w, r, "/error", http.StatusFound)
 	}
 }
 
@@ -149,25 +145,18 @@ func fileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	action := r.FormValue("action")
 	if action == "EDIT" {
-		t, _ := template.ParseFiles("templates/edit_file.tmpl", "templates/base_top.tmpl")
-		err := t.Execute(w, string(file))
+		err := re.HTML(w, http.StatusOK, "edit_file", string(file))
 		if err != nil {
-			log.Printf("error: %s", err.Error())
+			http.Redirect(w, r, "/error", http.StatusFound)
 		}
 		return
 	}
-	funcMap := template.FuncMap{
-		"safehtml": func(text string) template.HTML { return template.HTML(text) },
-	}
-	t := template.Must(template.New("fileshow.tmpl").Funcs(funcMap).ParseFiles("templates/fileshow.tmpl", "templates/base_top.tmpl"))
 	file_md := blackfriday.MarkdownCommon(file)
 	fileshow.Editpath = "/" + dirname + "/" + filename + "?action=EDIT"
 	fileshow.Content = string(file_md)
-	fmt.Println(filename)
-	fmt.Println(fileshow.Editpath)
-	err = t.Execute(w, fileshow)
+	err = re.HTML(w, http.StatusOK, "fileshow", fileshow)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
+		http.Redirect(w, r, "/error", http.StatusFound)
 	}
 }
 
@@ -207,10 +196,9 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("templates/upload.tmpl", "templates/base_top.tmpl")
-	err := t.Execute(w, nil)
+	err := re.HTML(w, http.StatusOK, "upload", nil)
 	if err != nil {
-		log.Printf("error: %s", err.Error())
+		http.Redirect(w, r, "/error", http.StatusFound)
 	}
 }
 
@@ -232,25 +220,27 @@ func main() {
 		path = append(path, file.Name())
 	}
 
+	re = render.New(render.Options{
+		Directory: "templates",
+		Funcs: []template.FuncMap{
+			{
+				"safehtml": func(text string) template.HTML { return template.HTML(text) },
+			},
+		},
+	})
+
 	repo = "wikitest/"
 	r := mux.NewRouter()
 	r.HandleFunc("/", RootHandler)
-	r.HandleFunc("/", Repository)
 	r.HandleFunc("/init", Initialize)
 	r.HandleFunc("/setting", Settings)
 	r.HandleFunc("/upload", uploadHandler)
 	r.HandleFunc("/save", saveHandler)
 	r.HandleFunc("/error", ErrorPage)
-	//	r.HandleFunc("/{dir}", dirHandler)
-	//	r.HandleFunc("/{dir}/{file}", fileHandler)
+	r.HandleFunc("/repo", Repository)
 
 	p := r.PathPrefix("/repo/").Subrouter()
 	p.HandleFunc("/{path:.*}", Repository)
-
-	//	p.HandleFunc("/", Repository)
-
-	//	p := r.PathPrefix("/repo").Subrouter()
-	//	p.HandleFunc("/", Repository)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

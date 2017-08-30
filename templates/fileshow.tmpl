@@ -1,7 +1,7 @@
-{{ template "base_top.tmpl" }}
+{{ template "base_top" . }}
 
 <body>
-    {{ .Content | safehtml }}
+    {{ safehtml .Content }}
     <form method="post" action={{ .Editpath }}>
         <input type="submit" value="編集">
     </form>
