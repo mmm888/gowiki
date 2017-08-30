@@ -106,60 +106,6 @@ func Repository(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, string(file_md))
 	}
 }
-
-func dirHandler(w http.ResponseWriter, r *http.Request) {
-	action := r.FormValue("action")
-	if action == "UPLOAD" {
-		err := re.HTML(w, http.StatusOK, "upload", nil)
-		if err != nil {
-			http.Redirect(w, r, "/error", http.StatusFound)
-		}
-		return
-	}
-	var dirshow DirShow
-	dirshow.Dirname = mux.Vars(r)["dir"]
-	nowdir := cd + dirshow.Dirname
-	dirshow.Uploadpath = "/" + dirshow.Dirname + "?action=UPLOAD"
-	files, err := ioutil.ReadDir(nowdir)
-	if err != nil {
-		log.Printf("error: %s", err.Error())
-	}
-	for _, file := range files {
-		dirshow.Filename = append(dirshow.Filename, file.Name())
-	}
-
-	err = re.HTML(w, http.StatusOK, "dirshow", dirshow)
-	if err != nil {
-		http.Redirect(w, r, "/error", http.StatusFound)
-	}
-}
-
-func fileHandler(w http.ResponseWriter, r *http.Request) {
-	var fileshow FileShow
-	dirname := mux.Vars(r)["dir"]
-	filename := mux.Vars(r)["file"]
-	nowpath := cd + dirname + "/" + filename
-	file, err := ioutil.ReadFile(nowpath)
-	if err != nil {
-		log.Printf("error: %s", err.Error())
-	}
-	action := r.FormValue("action")
-	if action == "EDIT" {
-		err := re.HTML(w, http.StatusOK, "edit_file", string(file))
-		if err != nil {
-			http.Redirect(w, r, "/error", http.StatusFound)
-		}
-		return
-	}
-	file_md := blackfriday.MarkdownCommon(file)
-	fileshow.Editpath = "/" + dirname + "/" + filename + "?action=EDIT"
-	fileshow.Content = string(file_md)
-	err = re.HTML(w, http.StatusOK, "fileshow", fileshow)
-	if err != nil {
-		http.Redirect(w, r, "/error", http.StatusFound)
-	}
-}
-
 func saveHandler(w http.ResponseWriter, r *http.Request) {
 	reader, err := r.MultipartReader()
 
@@ -182,14 +128,14 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			uploadedFile.Close()
-			redirectToErrorPage(w, r)
+			http.Redirect(w, r, "/error", http.StatusFound)
 		}
 
 		_, err = io.Copy(uploadedFile, part)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			uploadedFile.Close()
-			redirectToErrorPage(w, r)
+			http.Redirect(w, r, "/error", http.StatusFound)
 		}
 	}
 	http.Redirect(w, r, "/upload", http.StatusFound)
@@ -206,20 +152,7 @@ func ErrorPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "<p>Internal Server Error</p>")
 }
 
-func redirectToErrorPage(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/errorPage", http.StatusFound)
-}
-
 func main() {
-	cd = "data/"
-	files, err := ioutil.ReadDir(cd)
-	if err != nil {
-		log.Fatalf("error: %s", err.Error())
-	}
-	for _, file := range files {
-		path = append(path, file.Name())
-	}
-
 	re = render.New(render.Options{
 		Directory: "templates",
 		Funcs: []template.FuncMap{
@@ -237,8 +170,8 @@ func main() {
 	r.HandleFunc("/upload", uploadHandler)
 	r.HandleFunc("/save", saveHandler)
 	r.HandleFunc("/error", ErrorPage)
-	r.HandleFunc("/repo", Repository)
 
+	r.HandleFunc("/repo", Repository)
 	p := r.PathPrefix("/repo/").Subrouter()
 	p.HandleFunc("/{path:.*}", Repository)
 
