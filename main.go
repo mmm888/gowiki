@@ -24,17 +24,6 @@ var (
 	path []string
 )
 
-type DirShow struct {
-	Dirname    string
-	Uploadpath string
-	Filename   []string
-}
-
-type FileShow struct {
-	Editpath string
-	Content  string
-}
-
 func RootHandler(w http.ResponseWriter, r *http.Request) {
 	action := r.FormValue("action")
 	if action == "EDIT" {
@@ -152,17 +141,25 @@ func ErrorPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "<p>Internal Server Error</p>")
 }
 
+func TestHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("./test.html"))
+	tmpl.Execute(w, nil)
+}
+
 func main() {
+	baseurl := "http://dev01-xenial:8080"
+	repo = "wikitest/"
+
 	re = render.New(render.Options{
 		Directory: "templates",
 		Funcs: []template.FuncMap{
 			{
+				"url_for":  func(path string) string { return baseurl + path },
 				"safehtml": func(text string) template.HTML { return template.HTML(text) },
 			},
 		},
 	})
 
-	repo = "wikitest/"
 	r := mux.NewRouter()
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/init", Initialize)
@@ -170,10 +167,13 @@ func main() {
 	r.HandleFunc("/upload", uploadHandler)
 	r.HandleFunc("/save", saveHandler)
 	r.HandleFunc("/error", ErrorPage)
+	r.HandleFunc("/test", TestHandler)
 
 	r.HandleFunc("/repo", Repository)
 	p := r.PathPrefix("/repo/").Subrouter()
 	p.HandleFunc("/{path:.*}", Repository)
+
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
