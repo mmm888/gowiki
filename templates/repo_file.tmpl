@@ -1,0 +1,9 @@
+{{ template "base_top" . }}
+
+<body>
+    {{ safehtml .Content }}
+    <form method="post" action=/>
+        <input type="submit" value="編集">
+    </form>
+
+{{ template "base_bottom" . }}

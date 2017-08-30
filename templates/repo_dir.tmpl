@@ -1,0 +1,17 @@
+{{ template "base_top" . }}
+
+
+<body>
+    <h1>Root</h1>
+    {{ $path := .Path }}
+    <ul>
+        {{ range .Files }}
+            {{ $fpath := stradd $path . }}
+            <li><a href="{{ url_for $fpath }}">{{ . }}</a></li>
+        {{ end }}
+    </ul>
+    <form method="post" action="/">
+        <input type="submit" value="アップロード">
+    </form>
+</body>
+</html>

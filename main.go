@@ -74,25 +74,42 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 
 func Repository(w http.ResponseWriter, r *http.Request) {
 	path := mux.Vars(r)["path"]
-	PATH := repo + path
-	f, err := os.Stat(PATH)
+	rp := repo + path
+	vp := r.URL.String() + "/"
+	f, err := os.Stat(rp)
 	if err != nil {
 		log.Println("error: %s", err.Error())
 	}
 	if f.IsDir() {
-		var tmp string
-		dir, _ := ioutil.ReadDir(PATH)
-		for _, f := range dir {
-			tmp += f.Name() + "\n"
+		var files []string
+		var err error
+		dir, err := ioutil.ReadDir(rp)
+		if err != nil {
+			log.Printf("error: %s", err.Error())
 		}
-		fmt.Fprintln(w, tmp)
+		for _, f := range dir {
+			files = append(files, f.Name())
+		}
+		err = re.HTML(w, http.StatusOK, "repo_dir", struct {
+			Files []string
+			Path  string
+		}{
+			files, vp,
+		})
 	} else {
-		file, err := ioutil.ReadFile(PATH)
+		file, err := ioutil.ReadFile(rp)
 		if err != nil {
 			log.Printf("error: %s", err.Error())
 		}
 		file_md := blackfriday.MarkdownCommon(file)
-		fmt.Fprintln(w, string(file_md))
+		err = re.HTML(w, http.StatusOK, "repo_file", struct {
+			Content string
+		}{
+			string(file_md),
+		})
+		if err != nil {
+			http.Redirect(w, r, "/error", http.StatusFound)
+		}
 	}
 }
 func saveHandler(w http.ResponseWriter, r *http.Request) {
@@ -156,6 +173,7 @@ func main() {
 			{
 				"url_for":  func(path string) string { return baseurl + path },
 				"safehtml": func(text string) template.HTML { return template.HTML(text) },
+				"stradd":   func(a string, b string) string { return a + b },
 			},
 		},
 	})
