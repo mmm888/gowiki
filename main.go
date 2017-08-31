@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/russross/blackfriday"
@@ -73,9 +74,10 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 }
 
 func Repository(w http.ResponseWriter, r *http.Request) {
+	action := r.FormValue("action")
 	path := mux.Vars(r)["path"]
 	rp := repo + path
-	vp := r.URL.String() + "/"
+	vp := r.URL.String()
 	f, err := os.Stat(rp)
 	if err != nil {
 		log.Println("error: %s", err.Error())
@@ -94,24 +96,88 @@ func Repository(w http.ResponseWriter, r *http.Request) {
 			Files []string
 			Path  string
 		}{
-			files, vp,
+			files, vp + "/",
 		})
 	} else {
-		file, err := ioutil.ReadFile(rp)
-		if err != nil {
-			log.Printf("error: %s", err.Error())
+		if strings.HasSuffix(vp, "?action=E") {
+			vp = strings.TrimSuffix(vp, "?action=E")
 		}
-		file_md := blackfriday.MarkdownCommon(file)
-		err = re.HTML(w, http.StatusOK, "repo_file", struct {
-			Content string
-		}{
-			string(file_md),
-		})
-		if err != nil {
-			http.Redirect(w, r, "/error", http.StatusFound)
+		if strings.HasSuffix(vp, "?action=S") {
+			vp = strings.TrimSuffix(vp, "?action=S")
+		}
+		evp := vp + "?action=E"
+		svp := vp + "?action=S"
+		if action == "E" {
+			file, err := ioutil.ReadFile(rp)
+			if err != nil {
+				log.Printf("error: %s", err.Error())
+			}
+			err = re.HTML(w, http.StatusOK, "edit_file", struct {
+				Content string
+				Path    string
+				Epath   string
+				Spath   string
+			}{
+				string(file), vp, evp, svp,
+			})
+			if err != nil {
+				http.Redirect(w, r, "/error", http.StatusFound)
+			}
+		} else if action == "S" {
+			reader, err := r.MultipartReader()
+
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			for {
+				part, err := reader.NextPart()
+				if err == io.EOF {
+					break
+				}
+
+				if part.FileName() == "" {
+					continue
+				}
+
+				uploadedFile, err := os.Create("data/" + part.FileName())
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					uploadedFile.Close()
+					http.Redirect(w, r, "/error", http.StatusFound)
+				}
+
+				_, err = io.Copy(uploadedFile, part)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					uploadedFile.Close()
+					http.Redirect(w, r, "/error", http.StatusFound)
+				}
+			}
+			http.Redirect(w, r, "/upload", http.StatusFound)
+
+		} else {
+			file, err := ioutil.ReadFile(rp)
+			if err != nil {
+				log.Printf("error: %s", err.Error())
+			}
+			file_md := blackfriday.MarkdownCommon(file)
+			err = re.HTML(w, http.StatusOK, "repo_file", struct {
+				Content string
+				Path    string
+				Epath   string
+				Spath   string
+			}{
+				string(file_md), vp, evp, svp,
+			})
+			if err != nil {
+				http.Redirect(w, r, "/error", http.StatusFound)
+			}
 		}
 	}
 }
+
 func saveHandler(w http.ResponseWriter, r *http.Request) {
 	reader, err := r.MultipartReader()
 
