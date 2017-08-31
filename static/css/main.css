@@ -1,0 +1,12 @@
+$navbar-bg: #26f3fd;
+$navbar-height: 40px;
+
+nav {
+  min-height: 40px;
+  background-color: #000000;
+  height: $navbar-height;
+}
+
+body {
+  padding-top: 5rem;
+}
