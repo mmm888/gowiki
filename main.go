@@ -99,6 +99,9 @@ func dirHandler(w http.ResponseWriter, repo Repo) {
 		}{
 			files, repo.vp + "/", repo.evp, repo.svp,
 		})
+		if err != nil {
+			log.Println(err, "Cannot generate template")
+		}
 	}
 }
 
@@ -119,7 +122,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			string(file), repo.vp, repo.evp, repo.svp,
 		})
 		if err != nil {
-			http.Redirect(w, r, "/error", http.StatusFound)
+			log.Println(err, "Cannot generate template")
 		}
 	/* Save Display */
 	case "S":
@@ -154,7 +157,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			string(file_md), repo.vp, repo.evp, repo.svp,
 		})
 		if err != nil {
-			http.Redirect(w, r, "/error", http.StatusFound)
+			log.Println(err, "Cannot generate template")
 		}
 	}
 }
