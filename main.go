@@ -19,10 +19,10 @@ import (
 )
 
 var (
-	re   *render.Render
-	repo string
-	cd   string
-	path []string
+	re       *render.Render
+	reponame string
+	cd       string
+	path     []string
 )
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,23 +69,30 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		//	http.Redirect(w, r, "/error", http.StatusFound)
 		log.Printf("Could not clone %s: %s", rname, err.Error())
 	}
-	repo = rname
+	reponame = rname
 	http.Redirect(w, r, "/repo", http.StatusFound)
 }
 
-func Repository(w http.ResponseWriter, r *http.Request) {
-	action := r.FormValue("action")
-	path := mux.Vars(r)["path"]
-	rp := repo + path
-	vp := r.URL.String()
-	f, err := os.Stat(rp)
-	if err != nil {
-		log.Println("error: %s", err.Error())
-	}
-	if f.IsDir() {
+type Repo struct {
+	act string
+	rp  string
+	vp  string
+	evp string
+	svp string
+}
+
+func dirHandler(w http.ResponseWriter, repo Repo) {
+	switch repo.act {
+	// Edit
+	case "E":
+		fmt.Println("Edit")
+	// Save
+	case "S":
+		fmt.Println("Save")
+	// Show
+	default:
 		var files []string
-		var err error
-		dir, err := ioutil.ReadDir(rp)
+		dir, err := ioutil.ReadDir(repo.rp)
 		if err != nil {
 			log.Printf("error: %s", err.Error())
 		}
@@ -95,68 +102,95 @@ func Repository(w http.ResponseWriter, r *http.Request) {
 		err = re.HTML(w, http.StatusOK, "repo_dir", struct {
 			Files []string
 			Path  string
+			Epath string
+			Spath string
 		}{
-			files, vp + "/",
+			files, repo.vp + "/", repo.evp, repo.svp,
 		})
-	} else {
-		if strings.HasSuffix(vp, "?action=E") {
-			vp = strings.TrimSuffix(vp, "?action=E")
-		}
-		if strings.HasSuffix(vp, "?action=S") {
-			vp = strings.TrimSuffix(vp, "?action=S")
-		}
-		evp := vp + "?action=E"
-		svp := vp + "?action=S"
-		if action == "E" {
-			file, err := ioutil.ReadFile(rp)
-			if err != nil {
-				log.Printf("error: %s", err.Error())
-			}
-			err = re.HTML(w, http.StatusOK, "edit_file", struct {
-				Content string
-				Path    string
-				Epath   string
-				Spath   string
-			}{
-				string(file), vp, evp, svp,
-			})
-			if err != nil {
-				http.Redirect(w, r, "/error", http.StatusFound)
-			}
-		} else if action == "S" {
-			s := r.FormValue("submit")
-			if s == "Save" {
-				con := r.FormValue("content")
-				f, err := os.Create(rp)
-				if err != nil {
-					fmt.Printf("error: %s", err.Error())
-				}
-				defer f.Close()
+	}
+}
 
-				_, err = f.Write([]byte(con))
-				if err != nil {
-					fmt.Printf("error: %s", err.Error())
-				}
-			}
-			http.Redirect(w, r, vp, http.StatusFound)
-		} else {
-			file, err := ioutil.ReadFile(rp)
+func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
+	switch repo.act {
+	// Edit
+	case "E":
+		file, err := ioutil.ReadFile(repo.rp)
+		if err != nil {
+			log.Printf("error: %s", err.Error())
+		}
+		err = re.HTML(w, http.StatusOK, "edit_file", struct {
+			Content string
+			Path    string
+			Epath   string
+			Spath   string
+		}{
+			string(file), repo.vp, repo.evp, repo.svp,
+		})
+		if err != nil {
+			http.Redirect(w, r, "/error", http.StatusFound)
+		}
+	// Save
+	case "S":
+		s := r.FormValue("submit")
+		if s == "Save" {
+			con := r.FormValue("content")
+			f, err := os.Create(repo.rp)
 			if err != nil {
-				log.Printf("error: %s", err.Error())
+				fmt.Printf("error: %s", err.Error())
 			}
-			file_md := blackfriday.MarkdownCommon(file)
-			err = re.HTML(w, http.StatusOK, "repo_file", struct {
-				Content string
-				Path    string
-				Epath   string
-				Spath   string
-			}{
-				string(file_md), vp, evp, svp,
-			})
+			defer f.Close()
+
+			_, err = f.Write([]byte(con))
 			if err != nil {
-				http.Redirect(w, r, "/error", http.StatusFound)
+				fmt.Printf("error: %s", err.Error())
 			}
 		}
+		http.Redirect(w, r, repo.vp, http.StatusFound)
+	// Show
+	default:
+		file, err := ioutil.ReadFile(repo.rp)
+		if err != nil {
+			log.Printf("error: %s", err.Error())
+		}
+		file_md := blackfriday.MarkdownCommon(file)
+		err = re.HTML(w, http.StatusOK, "repo_file", struct {
+			Content string
+			Path    string
+			Epath   string
+			Spath   string
+		}{
+			string(file_md), repo.vp, repo.evp, repo.svp,
+		})
+		if err != nil {
+			http.Redirect(w, r, "/error", http.StatusFound)
+		}
+	}
+}
+
+func repoHandler(w http.ResponseWriter, r *http.Request) {
+	var repo Repo
+	actEdit := "?action=E"
+	actSave := "?action=S"
+	repo.act = r.FormValue("action")
+	path := mux.Vars(r)["path"]
+	repo.rp = reponame + path
+	repo.vp = r.URL.String()
+	if strings.HasSuffix(repo.vp, actEdit) {
+		repo.vp = strings.TrimSuffix(repo.vp, actEdit)
+	}
+	if strings.HasSuffix(repo.vp, actSave) {
+		repo.vp = strings.TrimSuffix(repo.vp, actSave)
+	}
+	repo.evp = repo.vp + actEdit
+	repo.svp = repo.vp + actSave
+	f, err := os.Stat(repo.rp)
+	if err != nil {
+		log.Println("error: %s", err.Error())
+	}
+	if f.IsDir() {
+		dirHandler(w, repo)
+	} else {
+		fileHandler(w, r, repo)
 	}
 }
 
@@ -213,7 +247,7 @@ func TestHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	baseurl := "http://dev01-xenial:8080"
-	repo = "wikitest/"
+	reponame = "wikitest/"
 
 	re = render.New(render.Options{
 		Directory: "templates",
@@ -235,9 +269,9 @@ func main() {
 	r.HandleFunc("/error", ErrorPage)
 	r.HandleFunc("/test", TestHandler)
 
-	r.HandleFunc("/repo", Repository)
+	r.HandleFunc("/repo", repoHandler)
 	p := r.PathPrefix("/repo/").Subrouter()
-	p.HandleFunc("/{path:.*}", Repository)
+	p.HandleFunc("/{path:.*}", repoHandler)
 
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 
