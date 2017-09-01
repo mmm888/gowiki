@@ -231,9 +231,36 @@ func ErrorPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "<p>Internal Server Error</p>")
 }
 
+/*
+type directory struct {
+	files []string
+}
+
+var dtree []directory
+*/
+
 func TestHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("./test.html"))
-	tmpl.Execute(w, nil)
+	/*
+		tmpl := template.Must(template.ParseFiles("./test.html"))
+		tmpl.Execute(w, nil)
+	*/
+	var files []string
+	dir, err := ioutil.ReadDir(reponame)
+	if err != nil {
+		log.Println(err, "Cannot read file")
+	}
+	for _, f := range dir {
+		files = append(files, f.Name())
+	}
+	err = re.HTML(w, http.StatusOK, "dirtree", struct {
+		Files []string
+		Path  string
+	}{
+		files, r.URL.String(),
+	})
+	if err != nil {
+		log.Println(err, "Cannot generate template")
+	}
 }
 
 func main() {
