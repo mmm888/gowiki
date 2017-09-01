@@ -124,39 +124,21 @@ func Repository(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/error", http.StatusFound)
 			}
 		} else if action == "S" {
-			reader, err := r.MultipartReader()
-
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			for {
-				part, err := reader.NextPart()
-				if err == io.EOF {
-					break
-				}
-
-				if part.FileName() == "" {
-					continue
-				}
-
-				uploadedFile, err := os.Create("data/" + part.FileName())
+			s := r.FormValue("submit")
+			if s == "Save" {
+				con := r.FormValue("content")
+				f, err := os.Create(rp)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					uploadedFile.Close()
-					http.Redirect(w, r, "/error", http.StatusFound)
+					fmt.Printf("error: %s", err.Error())
 				}
+				defer f.Close()
 
-				_, err = io.Copy(uploadedFile, part)
+				_, err = f.Write([]byte(con))
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					uploadedFile.Close()
-					http.Redirect(w, r, "/error", http.StatusFound)
+					fmt.Printf("error: %s", err.Error())
 				}
 			}
-			http.Redirect(w, r, "/upload", http.StatusFound)
-
+			http.Redirect(w, r, vp, http.StatusFound)
 		} else {
 			file, err := ioutil.ReadFile(rp)
 			if err != nil {
