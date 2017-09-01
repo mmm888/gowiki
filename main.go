@@ -73,28 +73,20 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/repo", http.StatusFound)
 }
 
-type Repo struct {
-	act string
-	rp  string
-	vp  string
-	evp string
-	svp string
-}
-
 func dirHandler(w http.ResponseWriter, repo Repo) {
 	switch repo.act {
-	// Edit
+	/* Edit Display */
 	case "E":
 		fmt.Println("Edit")
-	// Save
+	/* Save Display */
 	case "S":
 		fmt.Println("Save")
-	// Show
+	/* Show Display */
 	default:
 		var files []string
 		dir, err := ioutil.ReadDir(repo.rp)
 		if err != nil {
-			log.Printf("error: %s", err.Error())
+			log.Println(err, "Cannot read file")
 		}
 		for _, f := range dir {
 			files = append(files, f.Name())
@@ -112,11 +104,11 @@ func dirHandler(w http.ResponseWriter, repo Repo) {
 
 func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	switch repo.act {
-	// Edit
+	/* Edit Display */
 	case "E":
 		file, err := ioutil.ReadFile(repo.rp)
 		if err != nil {
-			log.Printf("error: %s", err.Error())
+			log.Println(err, "Cannot read file")
 		}
 		err = re.HTML(w, http.StatusOK, "edit_file", struct {
 			Content string
@@ -129,28 +121,28 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			http.Redirect(w, r, "/error", http.StatusFound)
 		}
-	// Save
+	/* Save Display */
 	case "S":
 		s := r.FormValue("submit")
 		if s == "Save" {
 			con := r.FormValue("content")
 			f, err := os.Create(repo.rp)
 			if err != nil {
-				fmt.Printf("error: %s", err.Error())
+				log.Println(err, "Cannot create file")
 			}
 			defer f.Close()
 
 			_, err = f.Write([]byte(con))
 			if err != nil {
-				fmt.Printf("error: %s", err.Error())
+				log.Println(err, "Cannot writer file")
 			}
 		}
 		http.Redirect(w, r, repo.vp, http.StatusFound)
-	// Show
+	/* Show Display */
 	default:
 		file, err := ioutil.ReadFile(repo.rp)
 		if err != nil {
-			log.Printf("error: %s", err.Error())
+			log.Println(err, "Cannot read file")
 		}
 		file_md := blackfriday.MarkdownCommon(file)
 		err = re.HTML(w, http.StatusOK, "repo_file", struct {
@@ -178,15 +170,16 @@ func repoHandler(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(repo.vp, actEdit) {
 		repo.vp = strings.TrimSuffix(repo.vp, actEdit)
 	}
+	repo.evp = repo.vp + actEdit
 	if strings.HasSuffix(repo.vp, actSave) {
 		repo.vp = strings.TrimSuffix(repo.vp, actSave)
 	}
-	repo.evp = repo.vp + actEdit
 	repo.svp = repo.vp + actSave
 	f, err := os.Stat(repo.rp)
 	if err != nil {
-		log.Println("error: %s", err.Error())
+		log.Println(err, "Failure to checking if file exists")
 	}
+
 	if f.IsDir() {
 		dirHandler(w, repo)
 	} else {
@@ -196,29 +189,24 @@ func repoHandler(w http.ResponseWriter, r *http.Request) {
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
 	reader, err := r.MultipartReader()
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
 			break
 		}
-
 		if part.FileName() == "" {
 			continue
 		}
-
 		uploadedFile, err := os.Create("data/" + part.FileName())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			uploadedFile.Close()
 			http.Redirect(w, r, "/error", http.StatusFound)
 		}
-
 		_, err = io.Copy(uploadedFile, part)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
