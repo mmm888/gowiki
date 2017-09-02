@@ -1,7 +1,5 @@
 package main
 
-//http://mjhd.hatenablog.com/entry/my-wikisystem-made-with-golang
-
 import (
 	"fmt"
 	"html/template"
