@@ -21,9 +21,10 @@ var (
 	reponame string = "wikitest/"
 	subdir   string = "repo/"
 	dirtree  string
-	baseurl  string = "http://dev01-xenial:8080"
-	cd       string
-	path     []string
+	//	baseurl  string = "http://dev01-xenial:8080"
+	baseurl string = "http://localhost:8080"
+	cd      string
+	path    []string
 )
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +71,7 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		//	http.Redirect(w, r, "/error", http.StatusFound)
 		log.Printf("Could not clone %s: %s", rname, err.Error())
 	}
-	repo = rname
+	reponame = rname
 	http.Redirect(w, r, "/repo", http.StatusFound)
 }
 
@@ -84,22 +85,27 @@ func dirHandler(w http.ResponseWriter, repo Repo) {
 		fmt.Println("Save")
 	/* Show Display */
 	default:
-		var files []string
-		dir, err := ioutil.ReadDir(repo.rp)
+		var err error
+		_, err = os.Stat(repo.rp + "/README.md")
+		if err != nil {
+			err = ioutil.WriteFile(repo.rp+"/README.md", nil, 0644)
+			if err != nil {
+				log.Println(err, "Cannot create README.md")
+			}
+		}
+		f, err := ioutil.ReadFile(repo.rp + "/README.md")
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
-		for _, f := range dir {
-			files = append(files, f.Name())
-		}
-		err = re.HTML(w, http.StatusOK, "repo_dir", struct {
-			Files   []string
+		md := blackfriday.MarkdownCommon(f)
+		err = re.HTML(w, http.StatusOK, "repo_file", struct {
+			Content string
 			Path    string
 			Epath   string
 			Spath   string
 			Dirtree string
 		}{
-			files, repo.vp + "/", repo.evp, repo.svp, dirtree,
+			string(md), repo.vp, repo.evp, repo.svp, dirtree,
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
@@ -111,7 +117,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	switch repo.act {
 	/* Edit Display */
 	case "E":
-		file, err := ioutil.ReadFile(repo.rp)
+		f, err := ioutil.ReadFile(repo.rp)
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
@@ -121,7 +127,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			Epath   string
 			Spath   string
 		}{
-			string(file), repo.vp, repo.evp, repo.svp,
+			string(f), repo.vp, repo.evp, repo.svp,
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
@@ -145,11 +151,11 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		http.Redirect(w, r, repo.vp, http.StatusFound)
 	/* Show Display */
 	default:
-		file, err := ioutil.ReadFile(repo.rp)
+		f, err := ioutil.ReadFile(repo.rp)
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
-		file_md := blackfriday.MarkdownCommon(file)
+		md := blackfriday.MarkdownCommon(f)
 		err = re.HTML(w, http.StatusOK, "repo_file", struct {
 			Content string
 			Path    string
@@ -157,7 +163,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			Spath   string
 			Dirtree string
 		}{
-			string(file_md), repo.vp, repo.evp, repo.svp, dirtree,
+			string(md), repo.vp, repo.evp, repo.svp, dirtree,
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
