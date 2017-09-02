@@ -1,12 +1,12 @@
-{{ template "base_top.tmpl" }}
+{{ template "base_top" . }}
     <div class="container">
-        <h1>ファイル</h1>
-        <form method="post" action="/save" enctype="multipart/form-data">
+        <h1>Edit</h1>
+        <form method="post" action={{ url_for .Spath }} enctype="multipart/form-data">
             <fieldset>
-                <textarea name="content" rows="20" cols="100">{{ . }}</textarea>
-                <input type="submit" name="submit" value="更新">
+                <textarea name="content" rows="20" cols="100">{{ .Content }}</textarea>
+                <input type="submit" name="submit" value="Save">
+                <input type="submit" name="submit" value="Back">
             </fieldset>
         </form>
     </div>
-    </body>
-</html>
+{{ template "base_bottom" . }}

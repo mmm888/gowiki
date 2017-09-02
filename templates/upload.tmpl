@@ -1,4 +1,4 @@
-{{ template "base_top.tmpl" }}
+{{ template "base_top" . }}
     <div class="container">
         <h1>ファイルアップロードテスト</h1>
         <form method="post" action="/save" enctype="multipart/form-data">
@@ -8,5 +8,4 @@
             </fieldset>
         </form>
     </div>
-    </body>
-</html>
+{{ template "base_bottom" . }}

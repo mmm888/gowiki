@@ -1,0 +1,16 @@
+{{ template "base_top" . }}
+	<div class="container-fluid">
+		<div class="row landing">
+			<div class="col-xs sidebar">
+                <nav>
+                    {{ safehtml .Dirtree }}
+                </nav>
+			</div>
+			<div class="col-xs-9">
+				<div class="container main-content">
+                   {{ safehtml .Content}}
+				</div>
+			</div>
+		</div>
+	</div>
+{{ template "base_bottom" . }}

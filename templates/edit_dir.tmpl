@@ -1,9 +1,8 @@
-{{ template "base_top.tmpl" }}
+{{ template "base_top" . }}
 <body>
     <form method="post" action="/?action=CREATE">
         Directory Name
         <input type="text" name="dir" size="20">
         <input type="submit" value="作成">
     </form>
-</body>
-</html>
+{{ template "base_bottom" . }}
