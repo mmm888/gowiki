@@ -10,9 +10,29 @@
     <link rel="stylesheet" href="css/bootstrap-grid.css">
   </head>
   <body>
+      <!--
     <h1>Hello, world!</h1>
 
     <h5>{{ safehtml .Content }}</h5>
+					<ul class="nav nav-pills nav-stacked">
+    -->
+
+	<div class="container-fluid">
+		<div class="row landing">
+			<div class="col-xs sidebar">
+                <nav>
+                    {{ safehtml .Content }}
+                </nav>
+			</div>
+			<div class="col-xs-9">
+
+				<div class="container main-content">
+					<h1> Main Blog </h1>
+					<p>Content goes here lorem ipsum and stuff.</p>
+				</div>
+			</div>
+		</div>
+	</div>
 
     <!-- jQuery first, then Tether, then Bootstrap JS. -->
     <script src="js/jquery.min.js"></script>

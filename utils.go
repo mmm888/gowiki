@@ -24,7 +24,7 @@ func dirTree(content *string, current string) {
 		if f.Name() == ".git" {
 			continue
 		}
-		*content += fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", rp+f.Name(), f.Name())
+		*content += fmt.Sprintf("<li><a href=\"%s\">%s</a></li>\n", baseurl+"/"+rp+f.Name(), f.Name())
 		fInfo, err := os.Stat(current + f.Name())
 		if err != nil {
 			log.Println(err, "Cannot check file info")

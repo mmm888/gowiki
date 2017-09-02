@@ -1,13 +1,25 @@
 {{ template "base_top" . }}
 
 <body>
-    <h1>Root</h1>
-    {{ $path := .Path }}
-    <ul>
-        {{ range .Files }}
-            {{ $fpath := stradd $path . }}
-            <li><a href="{{ url_for $fpath }}">{{ . }}</a></li>
-        {{ end }}
-    </ul>
-
+	<div class="container-fluid">
+		<div class="row landing">
+			<div class="col-xs sidebar">
+                <nav>
+                    {{ safehtml .Dirtree }}
+                </nav>
+			</div>
+			<div class="col-xs-9">
+				<div class="container main-content">
+                <h1>Root</h1>
+                {{ $path := .Path }}
+                <ul>
+                    {{ range .Files }}
+                        {{ $fpath := stradd $path . }}
+                        <li><a href="{{ url_for $fpath }}">{{ . }}</a></li>
+                    {{ end }}
+                </ul>
+				</div>
+			</div>
+		</div>
+	</div>
 {{ template "base_bottom" . }}

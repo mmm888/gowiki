@@ -23,6 +23,7 @@ var (
 	reponame string = "wikitest/"
 	subdir   string = "repo/"
 	dirtree  string
+	baseurl  string = "http://dev01-xenial:8080"
 	cd       string
 	path     []string
 )
@@ -94,12 +95,13 @@ func dirHandler(w http.ResponseWriter, repo Repo) {
 			files = append(files, f.Name())
 		}
 		err = re.HTML(w, http.StatusOK, "repo_dir", struct {
-			Files []string
-			Path  string
-			Epath string
-			Spath string
+			Files   []string
+			Path    string
+			Epath   string
+			Spath   string
+			Dirtree string
 		}{
-			files, repo.vp + "/", repo.evp, repo.svp,
+			files, repo.vp + "/", repo.evp, repo.svp, dirtree,
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
@@ -155,8 +157,9 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			Path    string
 			Epath   string
 			Spath   string
+			Dirtree string
 		}{
-			string(file_md), repo.vp, repo.evp, repo.svp,
+			string(file_md), repo.vp, repo.evp, repo.svp, dirtree,
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
@@ -253,8 +256,6 @@ func DirTreeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	baseurl := "http://dev01-xenial:8080"
-
 	re = render.New(render.Options{
 		Directory: "templates",
 		Funcs: []template.FuncMap{
