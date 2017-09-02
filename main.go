@@ -20,7 +20,9 @@ import (
 
 var (
 	re       *render.Render
-	reponame string
+	reponame string = "wikitest/"
+	subdir   string = "repo/"
+	dirtree  string
 	cd       string
 	path     []string
 )
@@ -231,32 +233,19 @@ func ErrorPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "<p>Internal Server Error</p>")
 }
 
-/*
-type directory struct {
-	files []string
+func TestHandler(w http.ResponseWriter, r *http.Request) {
+	//tmpl := template.Must(template.ParseFiles("./test.html"))
+	tmpl := template.Must(template.ParseFiles("./test2.html"))
+	tmpl.Execute(w, nil)
 }
 
-var dtree []directory
-*/
-
-func TestHandler(w http.ResponseWriter, r *http.Request) {
-	/*
-		tmpl := template.Must(template.ParseFiles("./test.html"))
-		tmpl.Execute(w, nil)
-	*/
-	var files []string
-	dir, err := ioutil.ReadDir(reponame)
-	if err != nil {
-		log.Println(err, "Cannot read file")
-	}
-	for _, f := range dir {
-		files = append(files, f.Name())
-	}
+func DirTreeHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
 	err = re.HTML(w, http.StatusOK, "dirtree", struct {
-		Files []string
-		Path  string
+		Path    string
+		Content string
 	}{
-		files, r.URL.String(),
+		r.URL.String(), dirtree,
 	})
 	if err != nil {
 		log.Println(err, "Cannot generate template")
@@ -265,7 +254,6 @@ func TestHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	baseurl := "http://dev01-xenial:8080"
-	reponame = "wikitest/"
 
 	re = render.New(render.Options{
 		Directory: "templates",
@@ -286,9 +274,10 @@ func main() {
 	r.HandleFunc("/save", saveHandler)
 	r.HandleFunc("/error", ErrorPage)
 	r.HandleFunc("/test", TestHandler)
+	r.HandleFunc("/dirtree", DirTreeHandler)
 
 	r.HandleFunc("/repo", repoHandler)
-	p := r.PathPrefix("/repo/").Subrouter()
+	p := r.PathPrefix("/repo").Subrouter()
 	p.HandleFunc("/{path:.*}", repoHandler)
 
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
