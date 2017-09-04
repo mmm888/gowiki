@@ -21,10 +21,10 @@ var (
 	reponame string = "wikitest/"
 	subdir   string = "repo/"
 	dirtree  string
-	//	baseurl  string = "http://dev01-xenial:8080"
-	baseurl string = "http://localhost:8080"
-	cd      string
-	path    []string
+	baseurl  string = "http://dev01-xenial:8080"
+	//	baseurl string = "http://localhost:8080"
+	cd   string
+	path []string
 )
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {

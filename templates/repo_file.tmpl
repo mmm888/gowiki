@@ -11,6 +11,11 @@
                    {{ safehtml .Content}}
 				</div>
 			</div>
+			<div class="col-xs sidebar">
+                <nav>
+                    {{ safehtml .Dirtree }}
+                </nav>
+			</div>
 		</div>
 	</div>
 {{ template "base_bottom" . }}
