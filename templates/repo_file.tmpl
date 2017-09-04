@@ -1,21 +1,17 @@
 {{ template "base_top" . }}
-	<div class="container-fluid">
-		<div class="row landing">
-			<div class="col-xs sidebar">
-                <nav>
-                    {{ safehtml .Dirtree }}
-                </nav>
-			</div>
-			<div class="col-xs-9">
-				<div class="container main-content">
-                   {{ safehtml .Content}}
-				</div>
-			</div>
-			<div class="col-xs sidebar">
-                <nav>
-                    {{ safehtml .Dirtree }}
-                </nav>
-			</div>
-		</div>
-	</div>
+
+    <div class="container-fluid">
+      <div class="row">
+        <nav class="col-sm-3 col-md-2 d-none d-sm-block bg-light sidebar">
+          {{ safehtml .Dirtree }}
+        </nav>
+
+    <!-- Begin page content -->
+        <main class="col-sm-9 ml-sm-auto col-md-10 pt-3" role="main">
+          {{ safehtml .Content}}
+        </main>
+
+      </div>
+    </div>
+
 {{ template "base_bottom" . }}

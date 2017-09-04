@@ -8,31 +8,74 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="css/bootstrap.css">
     <link rel="stylesheet" href="css/bootstrap-grid.css">
-    <link rel="stylesheet" href="css/sticker-footer.css">
+    <link rel="stylesheet" href="css/sidebar.css">
   </head>
   <body>
       
-    <!-- Begin page content -->
-    <div class="container">
-      <div class="mt-1">
-        <h1>Hello, world!</h1>
-      </div>
-      <h2>こんにちは</h2>
-      <ul>
-          <li><a href="#">Dir</a></li>
-          <li><a href="#">Dir2</a></li>
-          <ul>
-             <li><a href="#">File</a></li>
-             <li><a href="#">FIle2</a></li>
+    <div class="container-fluid">
+      <div class="row">
+        <nav class="col-sm-3 col-md-2 d-none d-sm-block bg-light sidebar">
+          <ul class="nav nav-pills flex-column">
+            <li class="nav-item">
+              <div class="nav-link active">Directory Tree<span class="sr-only">(current)</span></div>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Reports</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Analytics</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Export</a>
+            </li>
           </ul>
-      </ul>
-    </div>
 
-    <footer class="footer">
-      <div class="container">
-        <span class="text-muted">Place sticky footer content here.</span>
+          <ul class="nav nav-pills flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="#">Nav item</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Nav item again</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">One more nav</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Another nav item</a>
+            </li>
+          </ul>
+
+          <ul class="nav nav-pills flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="#">Nav item again</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">One more nav</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Another nav item</a>
+            </li>
+          </ul>
+        </nav>
+
+    <!-- Begin page content -->
+        <main class="col-sm-9 ml-sm-auto col-md-10 pt-3" role="main">
+          <div class="container">
+            <div class="mt-1">
+              <h1>Hello, world!</h1>
+            </div>
+            <h2>こんにちは</h2>
+            <ul>
+                <li><a href="#">Dir</a></li>
+                <li><a href="#">Dir2</a></li>
+                <ul>
+                   <li><a href="#">File</a></li>
+                   <li><a href="#">FIle2</a></li>
+                </ul>
+            </ul>
+          </div>
       </div>
-    </footer>
+    </div>
 
     <!-- jQuery first, then Tether, then Bootstrap JS. -->
     <script src="js/jquery.min.js"></script>
