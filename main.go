@@ -114,7 +114,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			isFileDir := r.FormValue("ForD")
 			if isFileDir == "File" {
 				var err error
-				_, err = os.Create(repo.rp + "/" + name)
+				_, err = os.OpenFile(repo.rp+"/"+name, os.O_CREATE, 0644)
 				if err != nil {
 					log.Println(err, "Cannot create file")
 				}
@@ -143,6 +143,11 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
+
+		if string(f) == "" {
+			http.Redirect(w, r, repo.evp, http.StatusFound)
+		}
+
 		md := blackfriday.MarkdownCommon(f)
 		err = re.HTML(w, http.StatusOK, "repo", struct {
 			Content string
@@ -202,6 +207,11 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
+
+		if string(f) == "" {
+			http.Redirect(w, r, repo.evp, http.StatusFound)
+		}
+
 		md := blackfriday.MarkdownCommon(f)
 		err = re.HTML(w, http.StatusOK, "repo", struct {
 			Content string
