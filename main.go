@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -18,17 +19,18 @@ import (
 
 var (
 	re       *render.Render
-	reponame = "wikitest/"
-	subdir   = "repo/"
-	dirtree  string
-	//baseurl  = "http://dev01-xenial:8080"
-	baseurl = "http://localhost:8080"
+	repoName = "wikitest"
+	subDir   = "repo"
+	dirTree  string
+	protocol = "http://"
+	//baseurl  = "dev01-xenial:8080"
+	baseurl = "localhost:8080"
 	actEdit = "?action=E"
 	actSave = "?action=S"
 
 	// only use RootHandler
-	cd   string
-	path []string
+	cd string
+	p  []string
 )
 
 // RootHandler is routing of "/"
@@ -42,7 +44,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if action == "CREATE" {
 		dirname := r.FormValue("dir")
-		for _, dir := range path {
+		for _, dir := range p {
 			if dir == dirname {
 				http.Redirect(w, r, "/", http.StatusFound)
 				return
@@ -52,11 +54,11 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("error: %s", err.Error())
 		}
-		path = append(path, dirname)
+		p = append(p, dirname)
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	err := re.HTML(w, http.StatusOK, "index", path)
+	err := re.HTML(w, http.StatusOK, "index", p)
 	if err != nil {
 		http.Redirect(w, r, "/error", http.StatusFound)
 	}
@@ -78,16 +80,17 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		//	http.Redirect(w, r, "/error", http.StatusFound)
 		log.Printf("Could not clone %s: %s", rname, err.Error())
 	}
-	reponame = rname
+	repoName = rname
 	http.Redirect(w, r, "/repo", http.StatusFound)
 }
 
 func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
+	readmePath := filepath.Join(repo.rp, "README.md")
 	switch repo.act {
 
 	// Edit Display
 	case "E":
-		f, err := ioutil.ReadFile(repo.rp + "/README.md")
+		f, err := ioutil.ReadFile(readmePath)
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
@@ -108,7 +111,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	case "S":
 		s := r.FormValue("submit")
 		if s == "Update" {
-			f, err := os.Create(repo.rp + "/README.md")
+			f, err := os.Create(readmePath)
 			if err != nil {
 				log.Println(err, "Cannot create file")
 			}
@@ -121,21 +124,24 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			}
 
 			name := r.FormValue("FileName")
+			if filepath.Ext(name) == "" {
+				name += ".md"
+			}
 			ForD := r.FormValue("ForD")
+			createPath := filepath.Join(repo.rp, name)
 			if ForD == "File" {
-				_, err = os.OpenFile(repo.rp+"/"+name, os.O_CREATE, 0644)
+				_, err = os.OpenFile(createPath, os.O_CREATE, 0644)
 				if err != nil {
 					log.Println(err, "Cannot create file")
 				}
 			} else if ForD == "Dir" {
-				err = os.Mkdir(repo.rp+"/"+name, 0755)
+				err = os.Mkdir(createPath, 0755)
 				if err != nil {
 					log.Println(err, "Cannot create directory")
 				}
 			}
 
-			dirtree = ""
-			dirTree(&dirtree, reponame)
+			updateDirTree()
 		}
 		http.Redirect(w, r, repo.vp, http.StatusFound)
 
@@ -161,13 +167,14 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 		md := blackfriday.MarkdownCommon(f)
 		err = re.HTML(w, http.StatusOK, "repo", struct {
-			Content string
-			Path    string
-			Epath   string
-			Spath   string
-			Dirtree string
+			Content  string
+			Path     string
+			Epath    string
+			Spath    string
+			Dirtree  string
+			LinkPath string
 		}{
-			string(md), repo.vp, repo.evp, repo.svp, dirtree,
+			string(md), repo.vp, repo.evp, repo.svp, dirTree, createLinkPath(repo.vp),
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
@@ -192,7 +199,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			Spath    string
 			FileName string
 		}{
-			string(f), repo.vp, repo.evp, repo.svp, "TEST",
+			string(f), repo.vp, repo.evp, repo.svp, filepath.Base(repo.rp),
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
@@ -230,13 +237,14 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 		md := blackfriday.MarkdownCommon(f)
 		err = re.HTML(w, http.StatusOK, "repo", struct {
-			Content string
-			Path    string
-			Epath   string
-			Spath   string
-			Dirtree string
+			Content  string
+			Path     string
+			Epath    string
+			Spath    string
+			Dirtree  string
+			LinkPath string
 		}{
-			string(md), repo.vp, repo.evp, repo.svp, dirtree,
+			string(md), repo.vp, repo.evp, repo.svp, dirTree, createLinkPath(repo.vp),
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
@@ -245,10 +253,10 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 }
 
 func repoHandler(w http.ResponseWriter, r *http.Request) {
-	path := mux.Vars(r)["path"]
+	p := mux.Vars(r)["path"]
 	var repo Repo
 	repo.act = r.FormValue("action")
-	repo.rp = reponame + path
+	repo.rp = filepath.Join(repoName, p)
 	repo.vp = r.URL.String()
 	if strings.HasSuffix(repo.vp, actEdit) {
 		repo.vp = strings.TrimSuffix(repo.vp, actEdit)
@@ -325,7 +333,7 @@ func main() {
 		Directory: "templates",
 		Funcs: []template.FuncMap{
 			{
-				"url_for":  func(path string) string { return baseurl + path },
+				"url_for":  func(path string) string { return protocol + baseurl + path },
 				"safehtml": func(text string) template.HTML { return template.HTML(text) },
 				"stradd":   func(a string, b string) string { return a + b },
 			},

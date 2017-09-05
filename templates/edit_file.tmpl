@@ -1,6 +1,5 @@
 {{ template "base_top" . }}
     <div class="container">
-        <h1>Edit</h1>
         <form method="post" action={{ url_for .Spath }} enctype="multipart/form-data">
             <fieldset>
                 <h2>Edit {{ .FileName }}</h2>
