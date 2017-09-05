@@ -68,8 +68,12 @@ func updateDirTree() {
 
 func createLinkPath(p string) string {
 	var linkPath []string
-	for strings.TrimLeft(p, "/") != subDir {
-		linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", protocol+path.Join(baseurl, p), path.Base(p))}, linkPath...)
+	for p != "/" {
+		if strings.TrimLeft(p, "/") == subDir {
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", protocol+path.Join(baseurl, p), "Root")}, linkPath...)
+		} else {
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", protocol+path.Join(baseurl, p), path.Base(p))}, linkPath...)
+		}
 		p = path.Dir(p)
 	}
 	return strings.Join(linkPath, " / \n")

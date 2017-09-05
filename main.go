@@ -84,12 +84,29 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/repo", http.StatusFound)
 }
 
+func initRepo(r *http.Request) Repo {
+	var repo Repo
+	p := mux.Vars(r)["path"]
+	repo.act = r.FormValue("action")
+	repo.rp = filepath.Join(repoName, p)
+	repo.vp = r.URL.String()
+	if strings.HasSuffix(repo.vp, actEdit) {
+		repo.vp = strings.TrimSuffix(repo.vp, actEdit)
+	}
+	repo.evp = repo.vp + actEdit
+	if strings.HasSuffix(repo.vp, actSave) {
+		repo.vp = strings.TrimSuffix(repo.vp, actSave)
+	}
+	repo.svp = repo.vp + actSave
+	return repo
+}
+
 func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
-	readmePath := filepath.Join(repo.rp, "README.md")
 	switch repo.act {
 
 	// Edit Display
 	case "E":
+		readmePath := filepath.Join(repo.rp, "README.md")
 		f, err := ioutil.ReadFile(readmePath)
 		if err != nil {
 			log.Println(err, "Cannot read file")
@@ -106,44 +123,6 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot generate template")
 		}
-
-	// Save Display
-	case "S":
-		s := r.FormValue("submit")
-		if s == "Update" {
-			f, err := os.Create(readmePath)
-			if err != nil {
-				log.Println(err, "Cannot create file")
-			}
-			defer f.Close()
-
-			con := r.FormValue("content")
-			_, err = f.Write([]byte(con))
-			if err != nil {
-				log.Println(err, "Cannot writer file")
-			}
-
-			name := r.FormValue("FileName")
-			if filepath.Ext(name) == "" {
-				name += ".md"
-			}
-			ForD := r.FormValue("ForD")
-			createPath := filepath.Join(repo.rp, name)
-			if ForD == "File" {
-				_, err = os.OpenFile(createPath, os.O_CREATE, 0644)
-				if err != nil {
-					log.Println(err, "Cannot create file")
-				}
-			} else if ForD == "Dir" {
-				err = os.Mkdir(createPath, 0755)
-				if err != nil {
-					log.Println(err, "Cannot create directory")
-				}
-			}
-
-			updateDirTree()
-		}
-		http.Redirect(w, r, repo.vp, http.StatusFound)
 
 	// Show Display
 	default:
@@ -205,24 +184,6 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			log.Println(err, "Cannot generate template")
 		}
 
-	// Save Display
-	case "S":
-		s := r.FormValue("submit")
-		if s == "Save" {
-			f, err := os.Create(repo.rp)
-			if err != nil {
-				log.Println(err, "Cannot create file")
-			}
-			defer f.Close()
-
-			con := r.FormValue("content")
-			_, err = f.Write([]byte(con))
-			if err != nil {
-				log.Println(err, "Cannot writer file")
-			}
-		}
-		http.Redirect(w, r, repo.vp, http.StatusFound)
-
 	// Show Display
 	default:
 		f, err := ioutil.ReadFile(repo.rp)
@@ -253,19 +214,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 }
 
 func repoHandler(w http.ResponseWriter, r *http.Request) {
-	p := mux.Vars(r)["path"]
-	var repo Repo
-	repo.act = r.FormValue("action")
-	repo.rp = filepath.Join(repoName, p)
-	repo.vp = r.URL.String()
-	if strings.HasSuffix(repo.vp, actEdit) {
-		repo.vp = strings.TrimSuffix(repo.vp, actEdit)
-	}
-	repo.evp = repo.vp + actEdit
-	if strings.HasSuffix(repo.vp, actSave) {
-		repo.vp = strings.TrimSuffix(repo.vp, actSave)
-	}
-	repo.svp = repo.vp + actSave
+	repo := initRepo(r)
 
 	// check whether file or directory
 	f, err := os.Stat(repo.rp)
@@ -276,6 +225,81 @@ func repoHandler(w http.ResponseWriter, r *http.Request) {
 		dirHandler(w, r, repo)
 	} else {
 		fileHandler(w, r, repo)
+	}
+}
+
+func dirPostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
+	s := r.FormValue("submit")
+	if s == "Update" {
+		readmePath := filepath.Join(repo.rp, "README.md")
+		f, err := os.Create(readmePath)
+		if err != nil {
+			log.Println(err, "Cannot create file")
+		}
+		defer f.Close()
+
+		con := r.FormValue("content")
+		_, err = f.Write([]byte(con))
+		if err != nil {
+			log.Println(err, "Cannot writer file")
+		}
+
+		name := r.FormValue("FileName")
+		ForD := r.FormValue("ForD")
+		createPath := filepath.Join(repo.rp, name)
+		if ForD == "File" {
+			if filepath.Ext(createPath) == "" {
+				createPath += ".md"
+			}
+			_, err = os.OpenFile(createPath, os.O_CREATE, 0644)
+			if err != nil {
+				log.Println(err, "Cannot create file")
+			}
+		} else if ForD == "Dir" {
+			err = os.Mkdir(createPath, 0755)
+			if err != nil {
+				log.Println(err, "Cannot create directory")
+			}
+		}
+
+		updateDirTree()
+	}
+	http.Redirect(w, r, repo.vp, http.StatusFound)
+}
+
+func filePostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
+	s := r.FormValue("submit")
+	if s == "Save" {
+		f, err := os.Create(repo.rp)
+		if err != nil {
+			log.Println(err, "Cannot create file")
+		}
+		defer f.Close()
+
+		con := r.FormValue("content")
+		_, err = f.Write([]byte(con))
+		if err != nil {
+			log.Println(err, "Cannot writer file")
+		}
+	}
+	http.Redirect(w, r, repo.vp, http.StatusFound)
+}
+
+func repoPostHandler(w http.ResponseWriter, r *http.Request) {
+	repo := initRepo(r)
+
+	// Save Display
+	if repo.act == "S" {
+		// check whether file or directory
+		f, err := os.Stat(repo.rp)
+		if err != nil {
+			log.Println(err, "Failure to checking if file exists")
+		}
+		if f.IsDir() {
+			dirPostHandler(w, r, repo)
+		} else {
+			filePostHandler(w, r, repo)
+		}
 	}
 }
 
@@ -351,7 +375,8 @@ func main() {
 
 	r.HandleFunc("/repo", repoHandler)
 	p := r.PathPrefix("/repo").Subrouter()
-	p.HandleFunc("/{path:.*}", repoHandler)
+	p.HandleFunc("/{path:.*}", repoHandler).Methods("GET")
+	p.HandleFunc("/{path:.*}", repoPostHandler).Methods("POST")
 
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 

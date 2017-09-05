@@ -1,9 +1,11 @@
 # gowiki
 
 * TODO
-  * POST を別ルーティングに変更
   * git commit (header: edit)
   * config file 作成
+  * test.go 作成
+    * golint .
+  * baseurl の自動設定
 
 * Add
   * sidebar: 折りたたみ
@@ -26,6 +28,4 @@
 
 
 * Memo
-  * golint .
-  * test.go 作成
   * content が "" の show 画面表示の際に redirect をする > log: multiple response.WriteHeader calls
