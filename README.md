@@ -2,10 +2,11 @@
 
 * TODO
   * repo/dir: 編集画面作成
+    * POST 時に dirtree 更新
   * git commit (header: edit)
-  * POST 時に dirtree 更新
   * config file 作成
   * path 指定を path, path/filepath で書き直す
+    * repo_file の path link 追加
   * test.go 作成
 
 * Add

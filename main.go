@@ -21,10 +21,10 @@ var (
 	reponame string = "wikitest/"
 	subdir   string = "repo/"
 	dirtree  string
-	baseurl  string = "http://dev01-xenial:8080"
-	//	baseurl string = "http://localhost:8080"
-	cd   string
-	path []string
+	//baseurl  string = "http://dev01-xenial:8080"
+	baseurl string = "http://localhost:8080"
+	cd      string
+	path    []string
 )
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func dirHandler(w http.ResponseWriter, repo Repo) {
 			log.Println(err, "Cannot read file")
 		}
 		md := blackfriday.MarkdownCommon(f)
-		err = re.HTML(w, http.StatusOK, "repo_file", struct {
+		err = re.HTML(w, http.StatusOK, "repo", struct {
 			Content string
 			Path    string
 			Epath   string
@@ -156,7 +156,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			log.Println(err, "Cannot read file")
 		}
 		md := blackfriday.MarkdownCommon(f)
-		err = re.HTML(w, http.StatusOK, "repo_file", struct {
+		err = re.HTML(w, http.StatusOK, "repo", struct {
 			Content string
 			Path    string
 			Epath   string
