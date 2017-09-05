@@ -1,11 +1,15 @@
 # gowiki
 
 * TODO
-  * git commit (header: edit)
   * config file 作成
+    * baseUrl
+    * repoName
+    * subDir
+  * Docker 化
   * test.go 作成
     * golint .
-  * baseurl の自動設定
+  * git commit (header: edit)
+    * 差分: git diff (header: diff)
 
 * Add
   * sidebar: 折りたたみ
@@ -20,11 +24,9 @@
       * https://getbootstrap.com/docs/4.0/examples/
 
 * Option
-  * 差分: git diff (header: diff)
   * 検索 (header: search)
   * 画像アップロード (footer: upload)
   * リアルタイムプレビュー 
-  * /repo を / に移行
 
 
 * Memo
