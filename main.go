@@ -75,14 +75,60 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/repo", http.StatusFound)
 }
 
-func dirHandler(w http.ResponseWriter, repo Repo) {
+func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	switch repo.act {
 	/* Edit Display */
 	case "E":
-		fmt.Println("Edit")
+		f, err := ioutil.ReadFile(repo.rp + "/README.md")
+		if err != nil {
+			log.Println(err, "Cannot read file")
+		}
+		err = re.HTML(w, http.StatusOK, "edit_dir", struct {
+			Content string
+			Path    string
+			Epath   string
+			Spath   string
+		}{
+			string(f), repo.vp, repo.evp, repo.svp,
+		})
+		if err != nil {
+			log.Println(err, "Cannot generate template")
+		}
 	/* Save Display */
 	case "S":
-		fmt.Println("Save")
+		s := r.FormValue("submit")
+		if s == "Update" {
+			con := r.FormValue("content")
+			f, err := os.Create(repo.rp + "/README.md")
+			if err != nil {
+				log.Println(err, "Cannot create file")
+			}
+			defer f.Close()
+
+			_, err = f.Write([]byte(con))
+			if err != nil {
+				log.Println(err, "Cannot writer file")
+			}
+
+			name := r.FormValue("FileName")
+			isFileDir := r.FormValue("ForD")
+			if isFileDir == "File" {
+				var err error
+				_, err = os.Create(repo.rp + "/" + name)
+				if err != nil {
+					log.Println(err, "Cannot create file")
+				}
+			} else if isFileDir == "Dir" {
+				var err error
+				err = os.Mkdir(repo.rp+"/"+name, 0755)
+				if err != nil {
+					log.Println(err, "Cannot create directory")
+				}
+			}
+			dirtree = ""
+			dirTree(&dirtree, reponame)
+		}
+		http.Redirect(w, r, repo.vp, http.StatusFound)
 	/* Show Display */
 	default:
 		var err error
@@ -122,12 +168,13 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			log.Println(err, "Cannot read file")
 		}
 		err = re.HTML(w, http.StatusOK, "edit_file", struct {
-			Content string
-			Path    string
-			Epath   string
-			Spath   string
+			Content  string
+			Path     string
+			Epath    string
+			Spath    string
+			FileName string
 		}{
-			string(f), repo.vp, repo.evp, repo.svp,
+			string(f), repo.vp, repo.evp, repo.svp, "TEST",
 		})
 		if err != nil {
 			log.Println(err, "Cannot generate template")
@@ -193,7 +240,7 @@ func repoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if f.IsDir() {
-		dirHandler(w, repo)
+		dirHandler(w, r, repo)
 	} else {
 		fileHandler(w, r, repo)
 	}

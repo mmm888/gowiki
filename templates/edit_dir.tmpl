@@ -1,8 +1,21 @@
 {{ template "base_top" . }}
-<body>
-    <form method="post" action="/?action=CREATE">
-        Directory Name
-        <input type="text" name="dir" size="20">
-        <input type="submit" value="作成">
-    </form>
+    <div class="container">
+        <form method="post" action={{ url_for .Spath }} enctype="multipart/form-data">
+            <fieldset>
+                <h2>Edit README.md</h2>
+                <textarea name="content" rows="20" cols="100">{{ .Content }}</textarea> <br>
+            </fieldset>
+            <fieldset>
+                <input type="text" name="FileName" />
+                <select name="ForD">
+                    <option value="None">None</option>
+                    <option value="File">Create File</option>
+                    <option value="Dir">Create Directory</option>
+                </select>
+            </fieldset>
+            <input type="submit" name="submit" value="Update">
+            <input type="submit" name="submit" value="Back">
+        </form>
+    </div>
 {{ template "base_bottom" . }}
+

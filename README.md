@@ -7,6 +7,8 @@
   * config file 作成
   * path 指定を path, path/filepath で書き直す
     * repo_file の path link 追加
+    * repo/file: Edit filename 追加
+  * golint .
   * test.go 作成
 
 * Add
