@@ -18,15 +18,20 @@ import (
 
 var (
 	re       *render.Render
-	reponame string = "wikitest/"
-	subdir   string = "repo/"
+	reponame = "wikitest/"
+	subdir   = "repo/"
 	dirtree  string
-	//baseurl  string = "http://dev01-xenial:8080"
-	baseurl string = "http://localhost:8080"
-	cd      string
-	path    []string
+	//baseurl  = "http://dev01-xenial:8080"
+	baseurl = "http://localhost:8080"
+	actEdit = "?action=E"
+	actSave = "?action=S"
+
+	// only use RootHandler
+	cd   string
+	path []string
 )
 
+// RootHandler is routing of "/"
 func RootHandler(w http.ResponseWriter, r *http.Request) {
 	action := r.FormValue("action")
 	if action == "EDIT" {
@@ -57,6 +62,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Initialize is routing of "/init"
 func Initialize(w http.ResponseWriter, r *http.Request) {
 	err := re.HTML(w, http.StatusOK, "initialize", nil)
 	if err != nil {
@@ -64,6 +70,7 @@ func Initialize(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Settings is routing of "/setting"
 func Settings(w http.ResponseWriter, r *http.Request) {
 	rname := r.FormValue("rname")
 	_, err := exec.Command("git", "clone", rname).Output()
@@ -77,12 +84,14 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 
 func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	switch repo.act {
-	/* Edit Display */
+
+	// Edit Display
 	case "E":
 		f, err := ioutil.ReadFile(repo.rp + "/README.md")
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
+
 		err = re.HTML(w, http.StatusOK, "edit_dir", struct {
 			Content string
 			Path    string
@@ -94,42 +103,43 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot generate template")
 		}
-	/* Save Display */
+
+	// Save Display
 	case "S":
 		s := r.FormValue("submit")
 		if s == "Update" {
-			con := r.FormValue("content")
 			f, err := os.Create(repo.rp + "/README.md")
 			if err != nil {
 				log.Println(err, "Cannot create file")
 			}
 			defer f.Close()
 
+			con := r.FormValue("content")
 			_, err = f.Write([]byte(con))
 			if err != nil {
 				log.Println(err, "Cannot writer file")
 			}
 
 			name := r.FormValue("FileName")
-			isFileDir := r.FormValue("ForD")
-			if isFileDir == "File" {
-				var err error
+			ForD := r.FormValue("ForD")
+			if ForD == "File" {
 				_, err = os.OpenFile(repo.rp+"/"+name, os.O_CREATE, 0644)
 				if err != nil {
 					log.Println(err, "Cannot create file")
 				}
-			} else if isFileDir == "Dir" {
-				var err error
+			} else if ForD == "Dir" {
 				err = os.Mkdir(repo.rp+"/"+name, 0755)
 				if err != nil {
 					log.Println(err, "Cannot create directory")
 				}
 			}
+
 			dirtree = ""
 			dirTree(&dirtree, reponame)
 		}
 		http.Redirect(w, r, repo.vp, http.StatusFound)
-	/* Show Display */
+
+	// Show Display
 	default:
 		var err error
 		_, err = os.Stat(repo.rp + "/README.md")
@@ -144,6 +154,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			log.Println(err, "Cannot read file")
 		}
 
+		// redirect "edit" when content is ""
 		if string(f) == "" {
 			http.Redirect(w, r, repo.evp, http.StatusFound)
 		}
@@ -166,12 +177,14 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	switch repo.act {
-	/* Edit Display */
+
+	// Edit Display
 	case "E":
 		f, err := ioutil.ReadFile(repo.rp)
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
+
 		err = re.HTML(w, http.StatusOK, "edit_file", struct {
 			Content  string
 			Path     string
@@ -184,30 +197,33 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot generate template")
 		}
-	/* Save Display */
+
+	// Save Display
 	case "S":
 		s := r.FormValue("submit")
 		if s == "Save" {
-			con := r.FormValue("content")
 			f, err := os.Create(repo.rp)
 			if err != nil {
 				log.Println(err, "Cannot create file")
 			}
 			defer f.Close()
 
+			con := r.FormValue("content")
 			_, err = f.Write([]byte(con))
 			if err != nil {
 				log.Println(err, "Cannot writer file")
 			}
 		}
 		http.Redirect(w, r, repo.vp, http.StatusFound)
-	/* Show Display */
+
+	// Show Display
 	default:
 		f, err := ioutil.ReadFile(repo.rp)
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
 
+		// redirect "edit" when content is ""
 		if string(f) == "" {
 			http.Redirect(w, r, repo.evp, http.StatusFound)
 		}
@@ -229,11 +245,9 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 }
 
 func repoHandler(w http.ResponseWriter, r *http.Request) {
-	var repo Repo
-	actEdit := "?action=E"
-	actSave := "?action=S"
-	repo.act = r.FormValue("action")
 	path := mux.Vars(r)["path"]
+	var repo Repo
+	repo.act = r.FormValue("action")
 	repo.rp = reponame + path
 	repo.vp = r.URL.String()
 	if strings.HasSuffix(repo.vp, actEdit) {
@@ -244,11 +258,12 @@ func repoHandler(w http.ResponseWriter, r *http.Request) {
 		repo.vp = strings.TrimSuffix(repo.vp, actSave)
 	}
 	repo.svp = repo.vp + actSave
+
+	// check whether file or directory
 	f, err := os.Stat(repo.rp)
 	if err != nil {
 		log.Println(err, "Failure to checking if file exists")
 	}
-
 	if f.IsDir() {
 		dirHandler(w, r, repo)
 	} else {
@@ -293,27 +308,16 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ErrorPage is routing of "/error"
 func ErrorPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "<p>Internal Server Error</p>")
 }
 
+// TestHandler is routing of "/test"
 func TestHandler(w http.ResponseWriter, r *http.Request) {
 	//tmpl := template.Must(template.ParseFiles("./test.html"))
 	tmpl := template.Must(template.ParseFiles("./test2.html"))
 	tmpl.Execute(w, nil)
-}
-
-func DirTreeHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
-	err = re.HTML(w, http.StatusOK, "dirtree", struct {
-		Path    string
-		Content string
-	}{
-		r.URL.String(), dirtree,
-	})
-	if err != nil {
-		log.Println(err, "Cannot generate template")
-	}
 }
 
 func main() {
@@ -336,7 +340,6 @@ func main() {
 	r.HandleFunc("/save", saveHandler)
 	r.HandleFunc("/error", ErrorPage)
 	r.HandleFunc("/test", TestHandler)
-	r.HandleFunc("/dirtree", DirTreeHandler)
 
 	r.HandleFunc("/repo", repoHandler)
 	p := r.PathPrefix("/repo").Subrouter()
