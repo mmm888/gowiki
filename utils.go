@@ -8,11 +8,19 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
 func init() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	createDirTree(&dirTree, repoName)
+
+	_, err := toml.DecodeFile(confFile, &config)
+	if err != nil {
+		log.Println(err, "Cannot decode toml file")
+	}
+
+	createDirTree(&dirTree, config.RepoName)
 }
 
 // create Directory Tree
@@ -31,11 +39,11 @@ func createDirTree(content *string, current string) {
 	*content += fmt.Sprintf("<ul %s>\n", ulClass)
 
 	// only "/"
-	if current == repoName {
+	if current == config.RepoName {
 		*content += fmt.Sprintf("<li %s>\n<div %s>Directory Tree<span %s>(current)</span></div>\n</li>", liClass, divClass, spanClass)
 	}
 
-	rp := strings.Replace(current, repoName, subDir, -1)
+	rp := strings.Replace(current, config.RepoName, config.SubDir, -1)
 	for _, f := range dir {
 		// Don't show ".git", "README.md"
 		if f.Name() == ".git" || f.Name() == "README.md" {
@@ -48,7 +56,7 @@ func createDirTree(content *string, current string) {
 			showName = strings.TrimRight(showName, filepath.Ext(showName))
 		}
 
-		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, protocol+path.Join(baseurl, rp, f.Name()), showName)
+		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, config.Protocol+path.Join(config.BaseURL, rp, f.Name()), showName)
 		fInfo, err := os.Stat(filepath.Join(current, f.Name()))
 		if err != nil {
 			log.Println(err, "Cannot check file info")
@@ -63,16 +71,16 @@ func createDirTree(content *string, current string) {
 
 func updateDirTree() {
 	dirTree = ""
-	createDirTree(&dirTree, repoName)
+	createDirTree(&dirTree, config.RepoName)
 }
 
 func createLinkPath(p string) string {
 	var linkPath []string
 	for p != "/" {
-		if strings.TrimLeft(p, "/") == subDir {
-			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", protocol+path.Join(baseurl, p), "Root")}, linkPath...)
+		if strings.TrimLeft(p, "/") == config.SubDir {
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Protocol+path.Join(config.BaseURL, p), "Top")}, linkPath...)
 		} else {
-			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", protocol+path.Join(baseurl, p), path.Base(p))}, linkPath...)
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Protocol+path.Join(config.BaseURL, p), path.Base(p))}, linkPath...)
 		}
 		p = path.Dir(p)
 	}

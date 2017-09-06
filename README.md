@@ -1,15 +1,12 @@
 # gowiki
 
 * TODO
-  * config file 作成
-    * baseUrl
-    * repoName
-    * subDir
-  * Docker 化
-  * test.go 作成
-    * golint .
   * git commit (header: edit)
     * 差分: git diff (header: diff)
+  * Docker 化
+  * rm dir, file
+  * test.go 作成
+    * golint .
 
 * Add
   * sidebar: 折りたたみ

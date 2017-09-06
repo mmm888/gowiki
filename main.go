@@ -19,14 +19,11 @@ import (
 
 var (
 	re       *render.Render
-	repoName = "wikitest"
-	subDir   = "repo"
 	dirTree  string
-	protocol = "http://"
-	//baseurl  = "dev01-xenial:8080"
-	baseurl = "localhost:8080"
-	actEdit = "?action=E"
-	actSave = "?action=S"
+	config   Config
+	confFile = "config.toml"
+	actEdit  = "?action=E"
+	actSave  = "?action=S"
 
 	// only use RootHandler
 	cd string
@@ -80,7 +77,7 @@ func Settings(w http.ResponseWriter, r *http.Request) {
 		//	http.Redirect(w, r, "/error", http.StatusFound)
 		log.Printf("Could not clone %s: %s", rname, err.Error())
 	}
-	repoName = rname
+	config.RepoName = rname
 	http.Redirect(w, r, "/repo", http.StatusFound)
 }
 
@@ -88,7 +85,7 @@ func initRepo(r *http.Request) Repo {
 	var repo Repo
 	p := mux.Vars(r)["path"]
 	repo.act = r.FormValue("action")
-	repo.rp = filepath.Join(repoName, p)
+	repo.rp = filepath.Join(config.RepoName, p)
 	repo.vp = r.URL.String()
 	if strings.HasSuffix(repo.vp, actEdit) {
 		repo.vp = strings.TrimSuffix(repo.vp, actEdit)
@@ -241,12 +238,12 @@ func dirPostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		con := r.FormValue("content")
 		_, err = f.Write([]byte(con))
 		if err != nil {
-			log.Println(err, "Cannot writer file")
+			log.Println(err, "Cannot write file")
 		}
 
 		name := r.FormValue("FileName")
 		ForD := r.FormValue("ForD")
-		createPath := filepath.Join(repo.rp, name)
+		createPath := filepath.Join(repo.rp, filepath.Base(name))
 		if ForD == "File" {
 			if filepath.Ext(createPath) == "" {
 				createPath += ".md"
@@ -357,7 +354,7 @@ func main() {
 		Directory: "templates",
 		Funcs: []template.FuncMap{
 			{
-				"url_for":  func(path string) string { return protocol + baseurl + path },
+				"url_for":  func(path string) string { return config.Protocol + config.BaseURL + path },
 				"safehtml": func(text string) template.HTML { return template.HTML(text) },
 				"stradd":   func(a string, b string) string { return a + b },
 			},
