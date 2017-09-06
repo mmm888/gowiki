@@ -2,7 +2,7 @@ package main
 
 // Config is decoded toml file
 type Config struct {
-	Protocol string
+	Scheme   string
 	BaseURL  string
 	RepoName string
 	SubDir   string

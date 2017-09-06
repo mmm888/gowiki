@@ -354,7 +354,7 @@ func main() {
 		Directory: "templates",
 		Funcs: []template.FuncMap{
 			{
-				"url_for":  func(path string) string { return config.Protocol + config.BaseURL + path },
+				"url_for":  func(path string) string { return config.Scheme + config.BaseURL + path },
 				"safehtml": func(text string) template.HTML { return template.HTML(text) },
 				"stradd":   func(a string, b string) string { return a + b },
 			},

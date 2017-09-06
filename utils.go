@@ -56,7 +56,7 @@ func createDirTree(content *string, current string) {
 			showName = strings.TrimRight(showName, filepath.Ext(showName))
 		}
 
-		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, config.Protocol+path.Join(config.BaseURL, rp, f.Name()), showName)
+		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, config.Scheme+path.Join(config.BaseURL, rp, f.Name()), showName)
 		fInfo, err := os.Stat(filepath.Join(current, f.Name()))
 		if err != nil {
 			log.Println(err, "Cannot check file info")
@@ -78,9 +78,9 @@ func createLinkPath(p string) string {
 	var linkPath []string
 	for p != "/" {
 		if strings.TrimLeft(p, "/") == config.SubDir {
-			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Protocol+path.Join(config.BaseURL, p), "Top")}, linkPath...)
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Scheme+path.Join(config.BaseURL, p), "Top")}, linkPath...)
 		} else {
-			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Protocol+path.Join(config.BaseURL, p), path.Base(p))}, linkPath...)
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Scheme+path.Join(config.BaseURL, p), path.Base(p))}, linkPath...)
 		}
 		p = path.Dir(p)
 	}

@@ -2,7 +2,7 @@
 
 * TODO
   * git commit (header: edit)
-    * 差分: git diff (header: diff)
+    * git diff (header: diff)
   * Docker 化
   * rm dir, file
 
@@ -19,10 +19,10 @@
       * https://getbootstrap.com/docs/4.0/examples/
 
 * Option
-  * /repo /repo/... のルーティングを統一
   * 検索 (header: search)
   * 画像アップロード (footer: upload)
   * リアルタイムプレビュー 
+  * /repo /repo/... のルーティングを統一
 
 
 * Memo
