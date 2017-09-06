@@ -5,8 +5,6 @@
     * 差分: git diff (header: diff)
   * Docker 化
   * rm dir, file
-  * test.go 作成
-    * golint .
 
 * Add
   * sidebar: 折りたたみ
@@ -21,6 +19,7 @@
       * https://getbootstrap.com/docs/4.0/examples/
 
 * Option
+  * /repo /repo/... のルーティングを統一
   * 検索 (header: search)
   * 画像アップロード (footer: upload)
   * リアルタイムプレビュー 
@@ -28,3 +27,5 @@
 
 * Memo
   * content が "" の show 画面表示の際に redirect をする > log: multiple response.WriteHeader calls
+  * test.go 作成
+    * golint .

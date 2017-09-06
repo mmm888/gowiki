@@ -370,7 +370,8 @@ func main() {
 	r.HandleFunc("/error", ErrorPage)
 	r.HandleFunc("/test", TestHandler)
 
-	r.HandleFunc("/repo", repoHandler)
+	r.HandleFunc("/repo", repoHandler).Methods("GET")
+	r.HandleFunc("/repo", repoPostHandler).Methods("POST")
 	p := r.PathPrefix("/repo").Subrouter()
 	p.HandleFunc("/{path:.*}", repoHandler).Methods("GET")
 	p.HandleFunc("/{path:.*}", repoPostHandler).Methods("POST")
