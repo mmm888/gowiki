@@ -4,7 +4,7 @@
   * git commit (header: edit)
     * update, save ごとに時間を名前にしてコミット
   * git diff (header: diff)
-    * Top: git diff <コミット名> 
+    * Top: git diff <コミット名>
     * Directory/File: git diff <コミット名> <ディレクトリ名/ファイル名>
   * rm dir, file
     * action=D: ファイル、ディレクトリ一覧出してチェックボックスで削除
