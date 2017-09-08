@@ -115,11 +115,6 @@ func gitCommit(p string) {
 	}
 }
 
-type gLog struct {
-	name string
-	hash string
-}
-
 // git log
 func gitLog(p string) []gLog {
 	var logList []gLog

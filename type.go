@@ -16,3 +16,8 @@ type Repo struct {
 	evp string
 	svp string
 }
+
+type gLog struct {
+	name string
+	hash string
+}
