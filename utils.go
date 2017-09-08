@@ -5,9 +5,11 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -53,7 +55,7 @@ func createDirTree(content *string, current string) {
 		// Delete file extension
 		showName := f.Name()
 		if filepath.Ext(showName) != "" {
-			showName = strings.TrimRight(showName, filepath.Ext(showName))
+			showName = strings.TrimSuffix(showName, filepath.Ext(showName))
 		}
 
 		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, config.Scheme+path.Join(config.BaseURL, rp, f.Name()), showName)
@@ -77,7 +79,7 @@ func updateDirTree() {
 func createLinkPath(p string) string {
 	var linkPath []string
 	for p != "/" {
-		if strings.TrimLeft(p, "/") == config.SubDir {
+		if strings.TrimPrefix(p, "/") == config.SubDir {
 			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Scheme+path.Join(config.BaseURL, p), "Top")}, linkPath...)
 		} else {
 			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Scheme+path.Join(config.BaseURL, p), path.Base(p))}, linkPath...)
@@ -85,4 +87,30 @@ func createLinkPath(p string) string {
 		p = path.Dir(p)
 	}
 	return strings.Join(linkPath, " / \n")
+}
+
+// git add + git commit
+func gitCommit(p string) {
+	prev, err := filepath.Abs(".")
+	if err != nil {
+		log.Println(err)
+	}
+	defer os.Chdir(prev)
+
+	err = os.Chdir(config.RepoName)
+	if err != nil {
+		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
+	}
+
+	gitPath := strings.TrimPrefix(p, config.RepoName+"/")
+	_, err = exec.Command("git", "add", gitPath).Output()
+	if err != nil {
+		log.Println(err, "Failed to exec \"git add "+gitPath+"\"")
+	}
+
+	now := time.Now().Format("2006-01-02_15:04:05")
+	_, err = exec.Command("git", "commit", "-m", now).Output()
+	if err != nil {
+		log.Println(err, "Failed to exec \"git commit -m "+now+"\"")
+	}
 }

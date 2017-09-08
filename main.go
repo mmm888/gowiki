@@ -246,12 +246,15 @@ func dirPostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		createPath := filepath.Join(repo.rp, filepath.Base(name))
 		if ForD == "File" {
 			if filepath.Ext(createPath) == "" {
+				name += ".md"
 				createPath += ".md"
 			}
 			_, err = os.OpenFile(createPath, os.O_CREATE, 0644)
 			if err != nil {
 				log.Println(err, "Cannot create file")
 			}
+
+			gitCommit(createPath)
 		} else if ForD == "Dir" {
 			err = os.Mkdir(createPath, 0755)
 			if err != nil {
@@ -259,7 +262,10 @@ func dirPostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			}
 		}
 
-		updateDirTree()
+		if ForD != "None" {
+			updateDirTree()
+			http.Redirect(w, r, filepath.Join(repo.vp, filepath.Base(name)), http.StatusFound)
+		}
 	}
 	http.Redirect(w, r, repo.vp, http.StatusFound)
 }
@@ -278,6 +284,8 @@ func filePostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot writer file")
 		}
+
+		gitCommit(repo.rp)
 	}
 	http.Redirect(w, r, repo.vp, http.StatusFound)
 }
