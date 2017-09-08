@@ -114,3 +114,59 @@ func gitCommit(p string) {
 		log.Println(err, "Failed to exec \"git commit -m "+now+"\"")
 	}
 }
+
+type gLog struct {
+	name string
+	hash string
+}
+
+// git log
+func gitLog(p string) []gLog {
+	var logList []gLog
+	prev, err := filepath.Abs(".")
+	if err != nil {
+		log.Println(err)
+	}
+	defer os.Chdir(prev)
+
+	err = os.Chdir(config.RepoName)
+	if err != nil {
+		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
+	}
+
+	gitPath := strings.TrimPrefix(p, config.RepoName+"/")
+	out, err := exec.Command("git", "log", "--pretty=format:\"%s %h\"", gitPath).Output()
+	if err != nil {
+		log.Println(err, "Failed to exec \"git diff\"")
+	}
+
+	list := strings.Split(string(out), "\n")
+	for _, v := range list {
+		v = strings.Trim(v, "\"")
+		alog := strings.Split(v, " ")
+		logList = append(logList, gLog{name: alog[0], hash: alog[1]})
+	}
+	return logList
+}
+
+// git diff
+func gitDiff(p string, l gLog) string {
+	prev, err := filepath.Abs(".")
+	if err != nil {
+		log.Println(err)
+	}
+	defer os.Chdir(prev)
+
+	err = os.Chdir(config.RepoName)
+	if err != nil {
+		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
+	}
+
+	gitPath := strings.TrimPrefix(p, config.RepoName+"/")
+	fmt.Println(l.hash, gitPath)
+	out, err := exec.Command("git", "diff", l.hash, gitPath).Output()
+	if err != nil {
+		log.Println(err, "Failed to exec \"git diff\"")
+	}
+	return string(out)
+}

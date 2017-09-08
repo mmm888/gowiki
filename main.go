@@ -32,32 +32,20 @@ var (
 
 // RootHandler is routing of "/"
 func RootHandler(w http.ResponseWriter, r *http.Request) {
-	action := r.FormValue("action")
-	if action == "EDIT" {
-		err := re.HTML(w, http.StatusOK, "edit_dir", nil)
-		if err != nil {
-			http.Redirect(w, r, "/error", http.StatusFound)
-		}
-		return
-	} else if action == "CREATE" {
-		dirname := r.FormValue("dir")
-		for _, dir := range p {
-			if dir == dirname {
-				http.Redirect(w, r, "/", http.StatusFound)
-				return
-			}
-		}
-		err := os.Mkdir(cd+dirname, 0755)
-		if err != nil {
-			log.Printf("error: %s", err.Error())
-		}
-		p = append(p, dirname)
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	err := re.HTML(w, http.StatusOK, "index", p)
+	fmt.Fprint(w, "hello")
+}
+
+func diffHandler(w http.ResponseWriter, r *http.Request) {
+	repo := initRepo(r)
+	err := re.HTML(w, http.StatusOK, "diff", struct {
+		Path  string
+		Epath string
+		Spath string
+	}{
+		repo.vp, repo.evp, repo.svp,
+	})
 	if err != nil {
-		http.Redirect(w, r, "/error", http.StatusFound)
+		log.Println(err, "Cannot generate template")
 	}
 }
 
@@ -207,6 +195,9 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot generate template")
 		}
+
+		tmp := gitLog(repo.rp)
+		fmt.Println(gitDiff(repo.rp, tmp[1]))
 	}
 }
 
@@ -377,6 +368,7 @@ func main() {
 	r.HandleFunc("/save", saveHandler)
 	r.HandleFunc("/error", ErrorPage)
 	r.HandleFunc("/test", TestHandler)
+	r.HandleFunc("/diff", diffHandler)
 
 	r.HandleFunc("/repo", repoHandler).Methods("GET")
 	r.HandleFunc("/repo", repoPostHandler).Methods("POST")
