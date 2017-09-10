@@ -24,10 +24,6 @@ var (
 	confFile = "config.toml"
 	actEdit  = "?action=E"
 	actSave  = "?action=S"
-
-	// only use RootHandler
-	cd string
-	p  []string
 )
 
 // RootHandler is routing of "/"
@@ -197,7 +193,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		}
 
 		tmp := gitLog(repo.rp)
-		fmt.Println(gitDiff(repo.rp, tmp[1]))
+		fmt.Println(gitDiff(repo.rp, tmp[0]))
 	}
 }
 
