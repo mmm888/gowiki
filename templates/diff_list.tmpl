@@ -1,0 +1,12 @@
+{{ template "base_top" . }}
+    <div class="container">
+        <ul>
+            {{ $file := .File }}
+            {{ range .CommitList }}
+            <li>
+                <a href="/diff/{{ .Hash }}{{ difflink $file }}">{{ .Name }}</a>
+            </li>
+            {{ end }}
+        </ul>
+    </div>
+{{ template "base_bottom" . }}

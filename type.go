@@ -2,10 +2,11 @@ package main
 
 // Config is decoded toml file
 type Config struct {
-	Scheme   string
-	BaseURL  string
-	RepoName string
-	SubDir   string
+	BaseURL       string
+	RepoName      string
+	SubDir        string
+	DiffLines     string
+	DiffSeparator string
 }
 
 // Repo is common part for "/repo"
@@ -17,7 +18,7 @@ type Repo struct {
 	svp string
 }
 
-type gLog struct {
-	name string
-	hash string
+type CommitLog struct {
+	Name string
+	Hash string
 }

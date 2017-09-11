@@ -22,6 +22,7 @@ var (
 	dirTree  string
 	config   Config
 	confFile = "config.toml"
+	scheme   = "http://"
 	actEdit  = "?action=E"
 	actSave  = "?action=S"
 )
@@ -34,13 +35,49 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 //tmp := gitLog(repo.rp)
 //fmt.Println(gitDiff(repo.rp, tmp[0]))
 
-func diffHandler(w http.ResponseWriter, r *http.Request) {
-	repo := initRepo(r)
-	err := re.HTML(w, http.StatusOK, "diff", struct {
+func diffListHandler(w http.ResponseWriter, r *http.Request) {
+	p := r.FormValue("path")
+	if p == "" {
+		p = config.RepoName
+	}
+	commitList := gitLog(p)
+	err := re.HTML(w, http.StatusOK, "diff_list", struct {
+		CommitList     []CommitLog
+		IsHeaderOption bool
 		Path           string
+		File           string
+	}{
+		commitList,
+		false,
+		GetRealRepoPath(config.RepoName),
+		p,
+	})
+	if err != nil {
+		log.Println(err, "Cannot generate template")
+	}
+}
+
+func diffShowHandler(w http.ResponseWriter, r *http.Request) {
+	h := mux.Vars(r)["hash"]
+	p := r.FormValue("path")
+	if p == "" {
+		p = config.RepoName
+	}
+	con := gitDiff(p, h)
+
+	defaultRows := 20
+	// TODO: 行数によってrowsの大きさを変える
+	//	fmt.Println(len(strings.Split(con, "\n")))
+	err := re.HTML(w, http.StatusOK, "diff_show", struct {
+		Content        string
+		Path           string
+		Rows           string
 		IsHeaderOption bool
 	}{
-		repo.vp, false,
+		con,
+		GetRealRepoPath(config.RepoName),
+		fmt.Sprint(defaultRows),
+		false,
 	})
 	if err != nil {
 		log.Println(err, "Cannot generate template")
@@ -135,7 +172,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		LinkPath       string
 		IsHeaderOption bool
 	}{
-		con, repo.vp, repo.evp, repo.svp, dirTree, createLinkPath(repo.vp), true,
+		con, GetRealRepoPath(repo.rp), repo.evp, repo.svp, dirTree, createLinkPath(repo.vp), true,
 	})
 	if err != nil {
 		log.Println(err, "Cannot generate template")
@@ -177,6 +214,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	// only Show: Dirtree, LinkPath
 	err := re.HTML(w, http.StatusOK, tmplname, struct {
 		Content        string
+		Path           string
 		Epath          string
 		Spath          string
 		FileName       string
@@ -184,7 +222,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		LinkPath       string
 		IsHeaderOption bool
 	}{
-		con, repo.evp, repo.svp, filepath.Base(repo.rp), dirTree, createLinkPath(repo.vp), true,
+		con, GetRealRepoPath(repo.rp), repo.evp, repo.svp, filepath.Base(repo.rp), dirTree, createLinkPath(repo.vp), true,
 	})
 	if err != nil {
 		log.Println(err, "Cannot generate template")
@@ -343,9 +381,15 @@ func main() {
 		Directory: "templates",
 		Funcs: []template.FuncMap{
 			{
-				"url_for":  func(path string) string { return config.Scheme + config.BaseURL + path },
+				"url_for":  func(path string) string { return scheme + config.BaseURL + path },
 				"safehtml": func(text string) template.HTML { return template.HTML(text) },
 				"stradd":   func(a string, b string) string { return a + b },
+				"difflink": func(p string) string {
+					if p == "" || p == "." {
+						return ""
+					}
+					return "?path=" + p
+				},
 			},
 		},
 	})
@@ -358,7 +402,8 @@ func main() {
 	r.HandleFunc("/save", saveHandler)
 	r.HandleFunc("/error", ErrorPage)
 	r.HandleFunc("/test", TestHandler)
-	r.HandleFunc("/diff", diffHandler)
+	r.HandleFunc("/diff", diffListHandler)
+	r.HandleFunc("/diff/{hash}", diffShowHandler)
 
 	r.HandleFunc("/repo", repoHandler).Methods("GET")
 	r.HandleFunc("/repo", repoPostHandler).Methods("POST")

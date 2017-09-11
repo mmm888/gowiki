@@ -21,6 +21,7 @@ func init() {
 	if err != nil {
 		log.Println(err, "Cannot decode toml file")
 	}
+	// TODO: config のエラーチェック
 
 	createDirTree(&dirTree, config.RepoName)
 }
@@ -58,7 +59,7 @@ func createDirTree(content *string, current string) {
 			showName = strings.TrimSuffix(showName, filepath.Ext(showName))
 		}
 
-		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, config.Scheme+path.Join(config.BaseURL, rp, f.Name()), showName)
+		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, scheme+path.Join(config.BaseURL, rp, f.Name()), showName)
 		fInfo, err := os.Stat(filepath.Join(current, f.Name()))
 		if err != nil {
 			log.Println(err, "Cannot check file info")
@@ -80,9 +81,9 @@ func createLinkPath(p string) string {
 	var linkPath []string
 	for p != "/" {
 		if strings.TrimPrefix(p, "/") == config.SubDir {
-			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Scheme+path.Join(config.BaseURL, p), "Top")}, linkPath...)
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", scheme+path.Join(config.BaseURL, p), "Top")}, linkPath...)
 		} else {
-			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", config.Scheme+path.Join(config.BaseURL, p), path.Base(p))}, linkPath...)
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", scheme+path.Join(config.BaseURL, p), path.Base(p))}, linkPath...)
 		}
 		p = path.Dir(p)
 	}
@@ -102,7 +103,7 @@ func gitCommit(p string) {
 		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
 	}
 
-	gitPath := strings.TrimPrefix(p, config.RepoName+"/")
+	gitPath := GetRealRepoPath(p)
 	_, err = exec.Command("git", "add", gitPath).Output()
 	if err != nil {
 		log.Println(err, "Failed to exec \"git add "+gitPath+"\"")
@@ -115,9 +116,19 @@ func gitCommit(p string) {
 	}
 }
 
+func GetRealRepoPath(rp string) string {
+	if rp == config.RepoName {
+		return "."
+	}
+
+	rpArray := strings.Split(rp, "/")
+	return strings.Join(rpArray[1:], "/")
+}
+
 // git log
-func gitLog(p string) []gLog {
-	var logList []gLog
+func gitLog(p string) []CommitLog {
+	var commitList []CommitLog
+
 	prev, err := filepath.Abs(".")
 	if err != nil {
 		log.Println(err)
@@ -129,23 +140,26 @@ func gitLog(p string) []gLog {
 		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
 	}
 
-	gitPath := strings.TrimPrefix(p, config.RepoName+"/")
-	out, err := exec.Command("git", "log", "--pretty=format:\"%s %h\"", gitPath).Output()
+	gitPath := p
+	if strings.HasPrefix(p, config.RepoName) {
+		gitPath = GetRealRepoPath(p)
+	}
+	out, err := exec.Command("git", "log", "-"+config.DiffLines, "--pretty=format:\"%s"+config.DiffSeparator+"%h\"", gitPath).Output()
 	if err != nil {
 		log.Println(err, "Failed to exec \"git diff\"")
 	}
 
 	list := strings.Split(string(out), "\n")
 	for _, v := range list {
-		v = strings.Trim(v, "\"")
-		alog := strings.Split(v, " ")
-		logList = append(logList, gLog{name: alog[0], hash: alog[1]})
+		v = v[1 : len(v)-1]
+		one := strings.Split(v, config.DiffSeparator)
+		commitList = append(commitList, CommitLog{Name: one[0], Hash: one[1]})
 	}
-	return logList
+	return commitList
 }
 
 // git diff
-func gitDiff(p string, l gLog) string {
+func gitDiff(p string, hash string) string {
 	prev, err := filepath.Abs(".")
 	if err != nil {
 		log.Println(err)
@@ -157,9 +171,11 @@ func gitDiff(p string, l gLog) string {
 		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
 	}
 
-	gitPath := strings.TrimPrefix(p, config.RepoName+"/")
-	fmt.Println(l.hash, gitPath)
-	out, err := exec.Command("git", "diff", l.hash, gitPath).Output()
+	gitPath := p
+	if strings.HasPrefix(p, config.RepoName) {
+		gitPath = GetRealRepoPath(p)
+	}
+	out, err := exec.Command("git", "diff", hash, gitPath).Output()
 	if err != nil {
 		log.Println(err, "Failed to exec \"git diff\"")
 	}
