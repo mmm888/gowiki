@@ -1,10 +1,6 @@
 # gowiki
 
 * TODO
-  * git diff (header: diff)
-    * Top: git diff <コミット名>
-    * Directory/File: git diff <コミット名> <ディレクトリ名/ファイル名>
-    * git log --pretty=format:"%s %h"
   * rm dir, file
     * action=D: ファイル、ディレクトリ一覧出してチェックボックスで削除
     * 確認画面
@@ -13,6 +9,7 @@
 * Add
   * sidebar: 折りたたみ
   * main.css 編集 (body, h1 ...)
+  * diff 表示画面色付け
   * 目次表示
     * 項目ごとに分割
     * 項目ごとに編集できるようにする
