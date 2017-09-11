@@ -31,14 +31,16 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "hello")
 }
 
+//tmp := gitLog(repo.rp)
+//fmt.Println(gitDiff(repo.rp, tmp[0]))
+
 func diffHandler(w http.ResponseWriter, r *http.Request) {
 	repo := initRepo(r)
 	err := re.HTML(w, http.StatusOK, "diff", struct {
-		Path  string
-		Epath string
-		Spath string
+		Path           string
+		IsHeaderOption bool
 	}{
-		repo.vp, repo.evp, repo.svp,
+		repo.vp, false,
 	})
 	if err != nil {
 		log.Println(err, "Cannot generate template")
@@ -83,6 +85,7 @@ func initRepo(r *http.Request) Repo {
 }
 
 func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
+	var con, tmplname string
 	switch repo.act {
 
 	// Edit Display
@@ -92,23 +95,13 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
+		con = string(f)
 
-		err = re.HTML(w, http.StatusOK, "edit_dir", struct {
-			Content string
-			Path    string
-			Epath   string
-			Spath   string
-		}{
-			string(f), repo.vp, repo.evp, repo.svp,
-		})
-		if err != nil {
-			log.Println(err, "Cannot generate template")
-		}
+		tmplname = "edit_dir"
 
 	// Show Display
 	default:
-		var err error
-		_, err = os.Stat(repo.rp + "/README.md")
+		_, err := os.Stat(repo.rp + "/README.md")
 		if err != nil {
 			err = ioutil.WriteFile(repo.rp+"/README.md", nil, 0644)
 			if err != nil {
@@ -126,23 +119,31 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		}
 
 		md := blackfriday.MarkdownCommon(f)
-		err = re.HTML(w, http.StatusOK, "repo", struct {
-			Content  string
-			Path     string
-			Epath    string
-			Spath    string
-			Dirtree  string
-			LinkPath string
-		}{
-			string(md), repo.vp, repo.evp, repo.svp, dirTree, createLinkPath(repo.vp),
-		})
-		if err != nil {
-			log.Println(err, "Cannot generate template")
-		}
+		con = string(md)
+
+		tmplname = "repo"
+	}
+
+	// only Edit: Spath
+	// only Show: Dirtree, LinkPath
+	err := re.HTML(w, http.StatusOK, tmplname, struct {
+		Content        string
+		Path           string
+		Epath          string
+		Spath          string
+		Dirtree        string
+		LinkPath       string
+		IsHeaderOption bool
+	}{
+		con, repo.vp, repo.evp, repo.svp, dirTree, createLinkPath(repo.vp), true,
+	})
+	if err != nil {
+		log.Println(err, "Cannot generate template")
 	}
 }
 
 func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
+	var con, tmplname string
 	switch repo.act {
 
 	// Edit Display
@@ -151,19 +152,9 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		if err != nil {
 			log.Println(err, "Cannot read file")
 		}
+		con = string(f)
 
-		err = re.HTML(w, http.StatusOK, "edit_file", struct {
-			Content  string
-			Path     string
-			Epath    string
-			Spath    string
-			FileName string
-		}{
-			string(f), repo.vp, repo.evp, repo.svp, filepath.Base(repo.rp),
-		})
-		if err != nil {
-			log.Println(err, "Cannot generate template")
-		}
+		tmplname = "edit_file"
 
 	// Show Display
 	default:
@@ -178,22 +169,25 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		}
 
 		md := blackfriday.MarkdownCommon(f)
-		err = re.HTML(w, http.StatusOK, "repo", struct {
-			Content  string
-			Path     string
-			Epath    string
-			Spath    string
-			Dirtree  string
-			LinkPath string
-		}{
-			string(md), repo.vp, repo.evp, repo.svp, dirTree, createLinkPath(repo.vp),
-		})
-		if err != nil {
-			log.Println(err, "Cannot generate template")
-		}
+		con = string(md)
+		tmplname = "repo"
+	}
 
-		tmp := gitLog(repo.rp)
-		fmt.Println(gitDiff(repo.rp, tmp[0]))
+	// only Edit: Spath, FileName
+	// only Show: Dirtree, LinkPath
+	err := re.HTML(w, http.StatusOK, tmplname, struct {
+		Content        string
+		Epath          string
+		Spath          string
+		FileName       string
+		Dirtree        string
+		LinkPath       string
+		IsHeaderOption bool
+	}{
+		con, repo.evp, repo.svp, filepath.Base(repo.rp), dirTree, createLinkPath(repo.vp), true,
+	})
+	if err != nil {
+		log.Println(err, "Cannot generate template")
 	}
 }
 
