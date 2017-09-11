@@ -32,15 +32,15 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "hello")
 }
 
-//tmp := gitLog(repo.rp)
-//fmt.Println(gitDiff(repo.rp, tmp[0]))
-
 func diffListHandler(w http.ResponseWriter, r *http.Request) {
+	var commitList []CommitLog
 	p := r.FormValue("path")
 	if p == "" {
-		p = config.RepoName
+		commitList = gitLog(config.RepoName)
+	} else {
+		commitList = gitLog(p)
+
 	}
-	commitList := gitLog(p)
 	err := re.HTML(w, http.StatusOK, "diff_list", struct {
 		CommitList     []CommitLog
 		IsHeaderOption bool
@@ -273,7 +273,6 @@ func dirPostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 				log.Println(err, "Cannot create file")
 			}
 
-			gitCommit(createPath)
 		} else if ForD == "Dir" {
 			err = os.Mkdir(createPath, 0755)
 			if err != nil {
@@ -285,6 +284,7 @@ func dirPostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 			updateDirTree()
 			http.Redirect(w, r, filepath.Join(repo.vp, filepath.Base(name)), http.StatusFound)
 		}
+		gitCommit(repo.rp)
 	}
 	http.Redirect(w, r, repo.vp, http.StatusFound)
 }

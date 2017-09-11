@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"strconv"
+
 	"github.com/BurntSushi/toml"
 )
 
@@ -90,6 +92,18 @@ func createLinkPath(p string) string {
 	return strings.Join(linkPath, " / \n")
 }
 
+func GetRealRepoPath(rp string) string {
+	if rp == config.RepoName {
+		return "."
+	}
+
+	if strings.HasPrefix(rp, config.RepoName) {
+		rpArray := strings.Split(rp, "/")
+		return strings.Join(rpArray[1:], "/")
+	}
+	return rp
+}
+
 // git add + git commit
 func gitCommit(p string) {
 	prev, err := filepath.Abs(".")
@@ -104,25 +118,19 @@ func gitCommit(p string) {
 	}
 
 	gitPath := GetRealRepoPath(p)
-	_, err = exec.Command("git", "add", gitPath).Output()
+	fmt.Println(gitPath)
+	out, err := exec.Command("git", "add", gitPath).Output()
 	if err != nil {
 		log.Println(err, "Failed to exec \"git add "+gitPath+"\"")
 	}
+	fmt.Println(string(out), err)
 
 	now := time.Now().Format("2006-01-02_15:04:05")
-	_, err = exec.Command("git", "commit", "-m", now).Output()
+	out, err = exec.Command("git", "commit", "-m", now).Output()
 	if err != nil {
 		log.Println(err, "Failed to exec \"git commit -m "+now+"\"")
 	}
-}
-
-func GetRealRepoPath(rp string) string {
-	if rp == config.RepoName {
-		return "."
-	}
-
-	rpArray := strings.Split(rp, "/")
-	return strings.Join(rpArray[1:], "/")
+	fmt.Println(string(out))
 }
 
 // git log
@@ -140,17 +148,22 @@ func gitLog(p string) []CommitLog {
 		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
 	}
 
-	gitPath := p
-	if strings.HasPrefix(p, config.RepoName) {
-		gitPath = GetRealRepoPath(p)
+	gitPath := GetRealRepoPath(p)
+	linecount, err := strconv.Atoi(config.DiffLines)
+	if err != nil {
+		log.Println(err, "Cannot convert string to int")
 	}
-	out, err := exec.Command("git", "log", "-"+config.DiffLines, "--pretty=format:\"%s"+config.DiffSeparator+"%h\"", gitPath).Output()
+	out, err := exec.Command("git", "log", "-"+fmt.Sprint(linecount), "--pretty=format:\"%s"+config.DiffSeparator+"%h\"", gitPath).Output()
 	if err != nil {
 		log.Println(err, "Failed to exec \"git diff\"")
 	}
 
 	list := strings.Split(string(out), "\n")
-	for _, v := range list {
+	for i, v := range list {
+		// ignore moust recent commit
+		if i == 0 {
+			continue
+		}
 		v = v[1 : len(v)-1]
 		one := strings.Split(v, config.DiffSeparator)
 		commitList = append(commitList, CommitLog{Name: one[0], Hash: one[1]})
@@ -171,10 +184,7 @@ func gitDiff(p string, hash string) string {
 		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
 	}
 
-	gitPath := p
-	if strings.HasPrefix(p, config.RepoName) {
-		gitPath = GetRealRepoPath(p)
-	}
+	gitPath := GetRealRepoPath(p)
 	out, err := exec.Command("git", "diff", hash, gitPath).Output()
 	if err != nil {
 		log.Println(err, "Failed to exec \"git diff\"")
