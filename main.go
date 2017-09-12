@@ -10,6 +10,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"path"
+
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -23,14 +26,7 @@ var (
 	config   Config
 	confFile = "config.toml"
 	scheme   = "http://"
-	actEdit  = "?action=E"
-	actSave  = "?action=S"
 )
-
-// RootHandler is routing of "/"
-func RootHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "hello")
-}
 
 func diffListHandler(w http.ResponseWriter, r *http.Request) {
 	var commitList []CommitLog
@@ -84,40 +80,15 @@ func diffShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Initialize is routing of "/init"
-func Initialize(w http.ResponseWriter, r *http.Request) {
-	err := re.HTML(w, http.StatusOK, "initialize", nil)
-	if err != nil {
-		http.Redirect(w, r, "/error", http.StatusFound)
-	}
-}
-
-// Settings is routing of "/setting"
-func Settings(w http.ResponseWriter, r *http.Request) {
-	rname := r.FormValue("rname")
-	_, err := exec.Command("git", "clone", rname).Output()
-	if err != nil {
-		//	http.Redirect(w, r, "/error", http.StatusFound)
-		log.Printf("Could not clone %s: %s", rname, err.Error())
-	}
-	config.RepoName = rname
-	http.Redirect(w, r, "/repo", http.StatusFound)
-}
-
 func initRepo(r *http.Request) Repo {
-	var repo Repo
 	p := mux.Vars(r)["path"]
+
+	var repo Repo
 	repo.act = r.FormValue("action")
-	repo.rp = filepath.Join(config.RepoName, p)
-	repo.vp = r.URL.String()
-	if strings.HasSuffix(repo.vp, actEdit) {
-		repo.vp = strings.TrimSuffix(repo.vp, actEdit)
-	}
-	repo.evp = repo.vp + actEdit
-	if strings.HasSuffix(repo.vp, actSave) {
-		repo.vp = strings.TrimSuffix(repo.vp, actSave)
-	}
-	repo.svp = repo.vp + actSave
+
+	repo.rp = GetNoActPath(filepath.Join(config.RepoName, p))
+	repo.vp = GetNoActPath(strings.TrimPrefix(r.URL.String(), "/"))
+
 	return repo
 }
 
@@ -145,6 +116,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 				log.Println(err, "Cannot create README.md")
 			}
 		}
+
 		f, err := ioutil.ReadFile(repo.rp + "/README.md")
 		if err != nil {
 			log.Println(err, "Cannot read file")
@@ -152,7 +124,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 		// redirect "edit" when content is ""
 		if string(f) == "" {
-			http.Redirect(w, r, repo.evp, http.StatusFound)
+			http.Redirect(w, r, repo.GetActPath("E"), http.StatusFound)
 		}
 
 		md := blackfriday.MarkdownCommon(f)
@@ -161,18 +133,19 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		tmplname = "repo"
 	}
 
-	// only Edit: Spath
 	// only Show: Dirtree, LinkPath
 	err := re.HTML(w, http.StatusOK, tmplname, struct {
 		Content        string
 		Path           string
-		Epath          string
-		Spath          string
-		Dirtree        string
+		Tree           string
 		LinkPath       string
 		IsHeaderOption bool
 	}{
-		con, GetRealRepoPath(repo.rp), repo.evp, repo.svp, dirTree, createLinkPath(repo.vp), true,
+		con,
+		repo.GetRealRepoPath(),
+		dirTree,
+		createLinkPath(repo.vp),
+		true,
 	})
 	if err != nil {
 		log.Println(err, "Cannot generate template")
@@ -202,27 +175,31 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 		// redirect "edit" when content is ""
 		if string(f) == "" {
-			http.Redirect(w, r, repo.evp, http.StatusFound)
+			http.Redirect(w, r, repo.GetActPath("E"), http.StatusFound)
 		}
 
 		md := blackfriday.MarkdownCommon(f)
 		con = string(md)
+
 		tmplname = "repo"
 	}
 
-	// only Edit: Spath, FileName
+	// only Edit: FileName
 	// only Show: Dirtree, LinkPath
 	err := re.HTML(w, http.StatusOK, tmplname, struct {
 		Content        string
 		Path           string
-		Epath          string
-		Spath          string
 		FileName       string
-		Dirtree        string
+		Tree           string
 		LinkPath       string
 		IsHeaderOption bool
 	}{
-		con, GetRealRepoPath(repo.rp), repo.evp, repo.svp, filepath.Base(repo.rp), dirTree, createLinkPath(repo.vp), true,
+		con,
+		repo.GetRealRepoPath(),
+		filepath.Base(repo.rp),
+		dirTree,
+		createLinkPath(repo.vp),
+		true,
 	})
 	if err != nil {
 		log.Println(err, "Cannot generate template")
@@ -237,6 +214,7 @@ func repoHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err, "Failure to checking if file exists")
 	}
+
 	if f.IsDir() {
 		dirHandler(w, r, repo)
 	} else {
@@ -263,30 +241,36 @@ func dirPostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		name := r.FormValue("FileName")
 		ForD := r.FormValue("ForD")
 		createPath := filepath.Join(repo.rp, filepath.Base(name))
-		if ForD == "File" {
-			if filepath.Ext(createPath) == "" {
-				name += ".md"
-				createPath += ".md"
-			}
-			_, err = os.OpenFile(createPath, os.O_CREATE, 0644)
-			if err != nil {
-				log.Println(err, "Cannot create file")
+		if name != "" {
+			if ForD == "File" {
+				if filepath.Ext(createPath) == "" {
+					name += ".md"
+					createPath += ".md"
+				}
+
+				_, err = os.OpenFile(createPath, os.O_CREATE, 0644)
+				if err != nil {
+					log.Println(err, "Cannot create file")
+				}
+
+			} else if ForD == "Dir" {
+				err = os.Mkdir(createPath, 0755)
+				if err != nil {
+					log.Println(err, "Cannot create directory")
+				}
 			}
 
-		} else if ForD == "Dir" {
-			err = os.Mkdir(createPath, 0755)
-			if err != nil {
-				log.Println(err, "Cannot create directory")
+			if ForD != "None" {
+				updateDirTree()
+				gitCommit(repo.rp)
+				// TODO ファイル名が aaa/bbb.md の時リダイレクトできない
+				http.Redirect(w, r, filepath.Join(repo.vp, filepath.Base(name)), http.StatusFound)
 			}
-		}
-
-		if ForD != "None" {
-			updateDirTree()
-			http.Redirect(w, r, filepath.Join(repo.vp, filepath.Base(name)), http.StatusFound)
 		}
 		gitCommit(repo.rp)
 	}
-	http.Redirect(w, r, repo.vp, http.StatusFound)
+
+	http.Redirect(w, r, GetFullPath(repo.vp), http.StatusFound)
 }
 
 func filePostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
@@ -306,7 +290,8 @@ func filePostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 		gitCommit(repo.rp)
 	}
-	http.Redirect(w, r, repo.vp, http.StatusFound)
+
+	http.Redirect(w, r, GetFullPath(repo.vp), http.StatusFound)
 }
 
 func repoPostHandler(w http.ResponseWriter, r *http.Request) {
@@ -319,12 +304,50 @@ func repoPostHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err, "Failure to checking if file exists")
 		}
+
 		if f.IsDir() {
 			dirPostHandler(w, r, repo)
 		} else {
 			filePostHandler(w, r, repo)
 		}
 	}
+}
+
+func deleteShowHandler(w http.ResponseWriter, r *http.Request) {
+	p := r.FormValue("path")
+
+	http.Redirect(w, r, path.Join(config.SubDir, p), http.StatusFound)
+}
+
+func deletePostHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+// ----
+
+// RootHandler is routing of "/"
+func RootHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/repo", http.StatusFound)
+}
+
+// Initialize is routing of "/init"
+func Initialize(w http.ResponseWriter, r *http.Request) {
+	err := re.HTML(w, http.StatusOK, "initialize", nil)
+	if err != nil {
+		http.Redirect(w, r, "/error", http.StatusFound)
+	}
+}
+
+// Settings is routing of "/setting"
+func Settings(w http.ResponseWriter, r *http.Request) {
+	rname := r.FormValue("rname")
+	_, err := exec.Command("git", "clone", rname).Output()
+	if err != nil {
+		//	http.Redirect(w, r, "/error", http.StatusFound)
+		log.Printf("Could not clone %s: %s", rname, err.Error())
+	}
+	config.RepoName = rname
+	http.Redirect(w, r, "/repo", http.StatusFound)
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
@@ -381,15 +404,16 @@ func main() {
 		Directory: "templates",
 		Funcs: []template.FuncMap{
 			{
-				"url_for":  func(path string) string { return scheme + config.BaseURL + path },
+				"url_for":  func(p string) string { return GetFullPath(p) },
 				"safehtml": func(text string) template.HTML { return template.HTML(text) },
 				"stradd":   func(a string, b string) string { return a + b },
 				"difflink": func(p string) string {
-					if p == "" || p == "." {
-						return ""
+					if p == "" {
+						return p
 					}
 					return "?path=" + p
 				},
+				"getactpath": func(p, a string) string { return GetActPath(path.Join(config.SubDir, p), a) },
 			},
 		},
 	})
@@ -404,6 +428,7 @@ func main() {
 	r.HandleFunc("/test", TestHandler)
 	r.HandleFunc("/diff", diffListHandler)
 	r.HandleFunc("/diff/{hash}", diffShowHandler)
+	r.HandleFunc("/delete", deleteShowHandler)
 
 	r.HandleFunc("/repo", repoHandler).Methods("GET")
 	r.HandleFunc("/repo", repoPostHandler).Methods("POST")

@@ -5,13 +5,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
-
-	"strconv"
 
 	"github.com/BurntSushi/toml"
 )
@@ -61,7 +57,7 @@ func createDirTree(content *string, current string) {
 			showName = strings.TrimSuffix(showName, filepath.Ext(showName))
 		}
 
-		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, scheme+path.Join(config.BaseURL, rp, f.Name()), showName)
+		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, GetFullPath(rp, f.Name()), showName)
 		fInfo, err := os.Stat(filepath.Join(current, f.Name()))
 		if err != nil {
 			log.Println(err, "Cannot check file info")
@@ -81,11 +77,11 @@ func updateDirTree() {
 
 func createLinkPath(p string) string {
 	var linkPath []string
-	for p != "/" {
-		if strings.TrimPrefix(p, "/") == config.SubDir {
-			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", scheme+path.Join(config.BaseURL, p), "Top")}, linkPath...)
+	for p != "." {
+		if p == config.SubDir {
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", GetFullPath(p), "Top")}, linkPath...)
 		} else {
-			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", scheme+path.Join(config.BaseURL, p), path.Base(p))}, linkPath...)
+			linkPath = append([]string{fmt.Sprintf("<a href=\"%s\">%s</a>\n", GetFullPath(p), path.Base(p))}, linkPath...)
 		}
 		p = path.Dir(p)
 	}
@@ -94,7 +90,7 @@ func createLinkPath(p string) string {
 
 func GetRealRepoPath(rp string) string {
 	if rp == config.RepoName {
-		return "."
+		return ""
 	}
 
 	if strings.HasPrefix(rp, config.RepoName) {
@@ -104,90 +100,35 @@ func GetRealRepoPath(rp string) string {
 	return rp
 }
 
-// git add + git commit
-func gitCommit(p string) {
-	prev, err := filepath.Abs(".")
-	if err != nil {
-		log.Println(err)
-	}
-	defer os.Chdir(prev)
+func GetNoActPath(p string) string {
+	action := "?action="
 
-	err = os.Chdir(config.RepoName)
-	if err != nil {
-		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
+	index := strings.LastIndex(p, action)
+	// repo.vp の Suffix が "?action=." かの判定
+	if index != -1 && p[index:len(p)-1] == action {
+		p = p[:index]
 	}
 
-	gitPath := GetRealRepoPath(p)
-	fmt.Println(gitPath)
-	out, err := exec.Command("git", "add", gitPath).Output()
-	if err != nil {
-		log.Println(err, "Failed to exec \"git add "+gitPath+"\"")
-	}
-	fmt.Println(string(out), err)
-
-	now := time.Now().Format("2006-01-02_15:04:05")
-	out, err = exec.Command("git", "commit", "-m", now).Output()
-	if err != nil {
-		log.Println(err, "Failed to exec \"git commit -m "+now+"\"")
-	}
-	fmt.Println(string(out))
+	return p
 }
 
-// git log
-func gitLog(p string) []CommitLog {
-	var commitList []CommitLog
+func GetActPath(p, key string) string {
+	action := "?action="
 
-	prev, err := filepath.Abs(".")
-	if err != nil {
-		log.Println(err)
-	}
-	defer os.Chdir(prev)
-
-	err = os.Chdir(config.RepoName)
-	if err != nil {
-		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
+	index := strings.LastIndex(p, action)
+	// repo.vp の Suffix が "?action=." かの判定
+	if index != -1 && p[index:len(p)-1] == action {
+		p = p[:index]
 	}
 
-	gitPath := GetRealRepoPath(p)
-	linecount, err := strconv.Atoi(config.DiffLines)
-	if err != nil {
-		log.Println(err, "Cannot convert string to int")
-	}
-	out, err := exec.Command("git", "log", "-"+fmt.Sprint(linecount), "--pretty=format:\"%s"+config.DiffSeparator+"%h\"", gitPath).Output()
-	if err != nil {
-		log.Println(err, "Failed to exec \"git diff\"")
-	}
-
-	list := strings.Split(string(out), "\n")
-	for i, v := range list {
-		// ignore moust recent commit
-		if i == 0 {
-			continue
-		}
-		v = v[1 : len(v)-1]
-		one := strings.Split(v, config.DiffSeparator)
-		commitList = append(commitList, CommitLog{Name: one[0], Hash: one[1]})
-	}
-	return commitList
+	return p + action + key
 }
 
-// git diff
-func gitDiff(p string, hash string) string {
-	prev, err := filepath.Abs(".")
-	if err != nil {
-		log.Println(err)
+func GetFullPath(p ...string) string {
+	urlpath := config.BaseURL
+	for _, v := range p {
+		urlpath = path.Join(urlpath, v)
 	}
-	defer os.Chdir(prev)
+	return scheme + urlpath
 
-	err = os.Chdir(config.RepoName)
-	if err != nil {
-		log.Println(err, "Failed to exec \"cd "+config.RepoName+"\"")
-	}
-
-	gitPath := GetRealRepoPath(p)
-	out, err := exec.Command("git", "diff", hash, gitPath).Output()
-	if err != nil {
-		log.Println(err, "Failed to exec \"git diff\"")
-	}
-	return string(out)
 }

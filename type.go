@@ -14,8 +14,14 @@ type Repo struct {
 	act string
 	rp  string
 	vp  string
-	evp string
-	svp string
+}
+
+func (repo Repo) GetActPath(a string) string {
+	return GetActPath(repo.vp, a)
+}
+
+func (repo Repo) GetRealRepoPath() string {
+	return GetRealRepoPath(repo.rp)
 }
 
 type CommitLog struct {

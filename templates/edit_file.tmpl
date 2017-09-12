@@ -1,6 +1,7 @@
 {{ template "base_top" . }}
     <div class="container">
-        <form method="post" action={{ url_for .Spath }} enctype="multipart/form-data">
+        {{ $savepath := getactpath .Path "S" }}
+        <form method="post" action={{ url_for $savepath }} enctype="multipart/form-data">
             <fieldset>
                 <h2>Edit {{ .FileName }}</h2>
                 <textarea name="content" rows="20" cols="100">{{ .Content }}</textarea> <br>

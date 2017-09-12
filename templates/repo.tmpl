@@ -1,20 +1,19 @@
 {{ template "base_top" . }}
-
-    <div class="container-fluid">
-      <div class="row">
+<div class="container-fluid">
+    <div class="row">
         <nav class="col-sm-3 col-md-2 d-none d-sm-block bg-light sidebar">
-          {{ safehtml .Dirtree }}
+            {{ safehtml .Tree }}
         </nav>
 
-    <!-- Begin page content -->
+        <!-- Begin page content -->
         <main class="col-sm-9 ml-sm-auto col-md-10 pt-3" role="main">
-          <div>
-              {{ safehtml .LinkPath }}
-          </div>
-          {{ safehtml .Content}}
+            <div>
+                {{ safehtml .LinkPath }}
+            </div>
+            {{ safehtml .Content}}
         </main>
 
-      </div>
     </div>
-
+</div>
 {{ template "base_bottom" . }}
+
