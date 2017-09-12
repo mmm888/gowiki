@@ -31,6 +31,7 @@ func createDirTree(content *string, current string) {
 	divClass := "class=\"nav-link active\""
 	aClass := "class=\"nav-link\""
 	spanClass := "class=\"sr-only\""
+
 	dir, err := ioutil.ReadDir(current)
 	if err != nil {
 		log.Println(err, "Cannot read file")

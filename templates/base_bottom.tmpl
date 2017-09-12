@@ -2,7 +2,11 @@
     <footer class="footer fixed-bottom">
       <div class="container">
         <span class="text-muted">
-            <a href="#">Upload Here</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Place sticky footer content here.
+              {{ $uploadpath := getactpath .Path "U" }}
+              <a href="{{ url_for $uploadpath }}">Upload Here</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              {{ $deletepath := getactpath .Path "D" }}
+            <a href="{{ url_for $deletepath }}">Delete Here</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            Place sticky footer content here.
         </span>
       </div>
     </footer>

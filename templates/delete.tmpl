@@ -1,0 +1,16 @@
+{{ template "base_top" . }}
+<div class="container">
+
+    <h1>ファイル削除</h1>
+    <form method="post" action="/delete{{ difflink .Path }}" enctype="multipart/form-data">
+        <fieldset>
+            <p>
+                {{ range .List }}
+                <input type="checkbox" path="{{ . }}">{{ getfilename . }}<br>
+                {{ end }}
+            </p>
+            <input type="submit" name="submit" value="delete">
+        </fieldset>
+    </form>
+</div>
+{{ template "base_bottom" . }}

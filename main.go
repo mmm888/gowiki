@@ -94,6 +94,7 @@ func initRepo(r *http.Request) Repo {
 
 func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	var con, tmplname string
+	var list []string
 	switch repo.act {
 
 	// Edit Display
@@ -106,6 +107,29 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		con = string(f)
 
 		tmplname = "edit_dir"
+
+	// Upload Display
+	case "U":
+		con = ""
+		tmplname = "upload"
+
+	// Delete Display
+	case "D":
+		dir, err := ioutil.ReadDir(repo.rp)
+		if err != nil {
+			log.Println(err, "Cannot read file")
+		}
+
+		for _, f := range dir {
+			if f.Name() == ".git" {
+				continue
+			}
+
+			list = append(list, GetRealRepoPath(path.Join(repo.vp, f.Name())))
+		}
+
+		con = ""
+		tmplname = "delete"
 
 	// Show Display
 	default:
@@ -139,12 +163,14 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		Path           string
 		Tree           string
 		LinkPath       string
+		List           []string
 		IsHeaderOption bool
 	}{
 		con,
 		repo.GetRealRepoPath(),
 		dirTree,
 		createLinkPath(repo.vp),
+		list,
 		true,
 	})
 	if err != nil {
@@ -154,6 +180,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 	var con, tmplname string
+	var list []string
 	switch repo.act {
 
 	// Edit Display
@@ -165,6 +192,18 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		con = string(f)
 
 		tmplname = "edit_file"
+
+	// Upload Display
+	case "U":
+		con = ""
+		tmplname = "upload"
+
+	// Delete Display
+	case "D":
+		list = []string{GetRealRepoPath(repo.vp)}
+
+		con = ""
+		tmplname = "delete"
 
 	// Show Display
 	default:
@@ -192,6 +231,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		FileName       string
 		Tree           string
 		LinkPath       string
+		List           []string
 		IsHeaderOption bool
 	}{
 		con,
@@ -199,6 +239,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 		filepath.Base(repo.rp),
 		dirTree,
 		createLinkPath(repo.vp),
+		list,
 		true,
 	})
 	if err != nil {
@@ -313,14 +354,12 @@ func repoPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func deleteShowHandler(w http.ResponseWriter, r *http.Request) {
-	p := r.FormValue("path")
-
-	http.Redirect(w, r, path.Join(config.SubDir, p), http.StatusFound)
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "hello")
 }
 
-func deletePostHandler(w http.ResponseWriter, r *http.Request) {
-
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "hello")
 }
 
 // ----
@@ -380,13 +419,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/upload", http.StatusFound)
 }
 
-func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	err := re.HTML(w, http.StatusOK, "upload", nil)
-	if err != nil {
-		http.Redirect(w, r, "/error", http.StatusFound)
-	}
-}
-
 // ErrorPage is routing of "/error"
 func ErrorPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "<p>Internal Server Error</p>")
@@ -413,7 +445,8 @@ func main() {
 					}
 					return "?path=" + p
 				},
-				"getactpath": func(p, a string) string { return GetActPath(path.Join(config.SubDir, p), a) },
+				"getactpath":  func(p, a string) string { return GetActPath(path.Join(config.SubDir, p), a) },
+				"getfilename": func(p string) string { return path.Base(p) },
 			},
 		},
 	})
@@ -422,13 +455,13 @@ func main() {
 	r.HandleFunc("/", RootHandler)
 	r.HandleFunc("/init", Initialize)
 	r.HandleFunc("/setting", Settings)
-	r.HandleFunc("/upload", uploadHandler)
 	r.HandleFunc("/save", saveHandler)
 	r.HandleFunc("/error", ErrorPage)
 	r.HandleFunc("/test", TestHandler)
 	r.HandleFunc("/diff", diffListHandler)
 	r.HandleFunc("/diff/{hash}", diffShowHandler)
-	r.HandleFunc("/delete", deleteShowHandler)
+	r.HandleFunc("/upload", uploadHandler).Methods("POST")
+	r.HandleFunc("/delete", deleteHandler).Methods("POST")
 
 	r.HandleFunc("/repo", repoHandler).Methods("GET")
 	r.HandleFunc("/repo", repoPostHandler).Methods("POST")
