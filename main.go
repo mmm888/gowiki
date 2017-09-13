@@ -148,7 +148,7 @@ func dirHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 		// redirect "edit" when content is ""
 		if string(f) == "" {
-			http.Redirect(w, r, repo.GetActPath("E"), http.StatusFound)
+			http.Redirect(w, r, GetFullPath(repo.GetActPath("E")), http.StatusFound)
 		}
 
 		md := blackfriday.MarkdownCommon(f)
@@ -214,7 +214,7 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 		// redirect "edit" when content is ""
 		if string(f) == "" {
-			http.Redirect(w, r, repo.GetActPath("E"), http.StatusFound)
+			http.Redirect(w, r, GetFullPath(repo.GetActPath("E")), http.StatusFound)
 		}
 
 		md := blackfriday.MarkdownCommon(f)
@@ -354,12 +354,74 @@ func repoPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func FormValuetoRepo(p string) Repo {
+	var repo Repo
+	repo.vp = path.Join(config.SubDir, p)
+	repo.rp = strings.Replace(repo.vp, config.SubDir, config.RepoName, 1)
+	return repo
+}
+
+func IsFileExist(p string) bool {
+	_, err := os.Stat(p)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "hello")
+	repo := FormValuetoRepo(r.FormValue("path"))
+
+	s := r.FormValue("submit")
+	if s == "Delete" {
+		r.ParseForm()
+		list := r.Form["dpath"]
+
+		var err error
+		for _, v := range list {
+			deletepath := strings.Replace(v, config.SubDir, config.RepoName, 1)
+			err = os.RemoveAll(deletepath)
+			if err != nil {
+				log.Println(err, "Cannot remove directory/file")
+			}
+		}
+		updateDirTree()
+
+		// 自分自身を削除したら一つ上のディレクトリにリダイレクト
+		if !IsFileExist(repo.rp) {
+			repo.vp = path.Dir(repo.vp)
+		}
+
+	}
+
+	http.Redirect(w, r, GetFullPath(repo.vp), http.StatusFound)
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "hello")
+	repo := FormValuetoRepo(r.FormValue("path"))
+
+	f, reader, err := r.FormFile("file")
+	if err != nil {
+		log.Println(err, "Cannot get upload file")
+	}
+	defer f.Close()
+
+	uploadpath := filepath.Join(repo.rp, reader.Filename)
+	if !IsFileExist(uploadpath) {
+		uploadfile, err := os.Create(uploadpath)
+		if err != nil {
+			log.Println(err)
+		}
+
+		io.Copy(uploadfile, f)
+		updateDirTree()
+	}
+}
+
+func redirectHandler(w http.ResponseWriter, r *http.Request) {
+	p := r.FormValue("path")
+
+	http.Redirect(w, r, GetRealRepoPath(path.Join(config.SubDir, p)), http.StatusFound)
 }
 
 // ----
@@ -462,6 +524,7 @@ func main() {
 	r.HandleFunc("/diff/{hash}", diffShowHandler)
 	r.HandleFunc("/upload", uploadHandler).Methods("POST")
 	r.HandleFunc("/delete", deleteHandler).Methods("POST")
+	r.HandleFunc("/redirect", redirectHandler).Methods("POST")
 
 	r.HandleFunc("/repo", repoHandler).Methods("GET")
 	r.HandleFunc("/repo", repoPostHandler).Methods("POST")

@@ -2,14 +2,15 @@
 <div class="container">
 
     <h1>ファイル削除</h1>
-    <form method="post" action="/delete{{ difflink .Path }}" enctype="multipart/form-data">
+    <form method="post" action="/delete{{ difflink .Path }}">
         <fieldset>
             <p>
                 {{ range .List }}
-                <input type="checkbox" path="{{ . }}">{{ getfilename . }}<br>
+                <input type="checkbox" name="dpath" value="{{ . }}">{{ getfilename . }}<br>
                 {{ end }}
             </p>
-            <input type="submit" name="submit" value="delete">
+            <input type="submit" name="submit" value="Delete">
+            <input type="submit" name="submit" value="Back">
         </fieldset>
     </form>
 </div>

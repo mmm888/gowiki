@@ -1,15 +1,10 @@
 # gowiki
 
 * TODO
-  * rm dir, file
-    * action=D: ファイル、ディレクトリ一覧出してチェックボックスで削除
-    * 確認画面
-  * 画像アップロード (footer: upload)
-
-* Add
   * sidebar: 折りたたみ
   * main.css 編集 (body, h1 ...)
-  * Docker 化
+  * Docker, nginx init
+  * render 関数整理
 
 * Option
   * 目次表示
@@ -21,9 +16,11 @@
     * サイドバー作成
       * https://getbootstrap.com/docs/4.0/examples/
   * diff 表示画面色付け & diff 表示を見やすくする
+  * delete: 確認画面表示
   * 検索 (header: search)
   * リアルタイムプレビュー 
-  * /repo /repo/... のルーティングを統一
+  * /repo /repo/... のルーティングを統一, subdirectory 設定
+  * git の初期設定
 
 
 * Memo

@@ -1,11 +1,9 @@
 {{ template "base_top" . }}
     <div class="container">
-        <h1>ファイルアップロードテスト</h1>
-        <form method="post" action="/upload{{ difflink .Path }}" enctype="multipart/form-data">
-            <fieldset>
-                <input type="file" name="upload_files" id="upload_files" multiple="multiple">
-                <input type="submit" name="submit" value="アップロード">
-            </fieldset>
+        <h1>ファイルアップロード</h1>
+        <form action="/upload{{ difflink .Path }}" class="dropzone" id="dropzone"></form>
+        <form method="post" action="/redirect{{ difflink .Path }}" enctype="multipart/form-data">
+            <input type="submit" name="submit" value="Back">
         </form>
     </div>
 {{ template "base_bottom" . }}
