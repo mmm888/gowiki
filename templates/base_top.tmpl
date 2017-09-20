@@ -8,10 +8,33 @@
         <link rel="stylesheet" href="{{ url_for "/css/bootstrap.min.css" }}">
         <link rel="stylesheet" href="{{ url_for "/css/bootstrap-grid.min.css" }}">
         <link rel="stylesheet" href="{{ url_for "/css/main.css" }}">
+        <!-- jQuery -->
+        <script src="{{ url_for "/js/jquery.min.js" }}"></script>
+
         <!-- only /upload -->
         <script src="{{ url_for "/js/dropzone.min.js" }}"></script>
         <link rel="stylesheet" href="{{ url_for "/css/dropzone.min.css" }}" media="all">
         <link rel="stylesheet" href="{{ url_for "/js/dropzone.min.js" }}" media="all">
+
+        <!-- fancytree -->
+        <link href="{{ url_for "/theme/skin-win8/ui.fancytree.min.css"}}" rel="stylesheet">
+        <script src="{{ url_for "/css/jquery.fancytree-all-deps.min.js"}}"></script>
+        <script type="text/javascript">
+        $(function(){
+        	// --- Initialize sample trees
+        	$("#tree").fancytree({
+        		activate: function(event, data){
+        			var node = data.node,
+        				orgEvent = data.originalEvent || {};
+        
+        			// Open href
+        			if(node.data.href){
+                        location.href = node.data.href;
+        			}
+        		},
+        	});
+        });
+        </script>
 
         <title>GoWiki</title>
     </head> 

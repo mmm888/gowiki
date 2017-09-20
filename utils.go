@@ -26,23 +26,24 @@ func init() {
 
 // create Directory Tree
 func createDirTree(content *string, current string) {
-	ulClass := "class=\"nav nav-pills flex-column\""
-	liClass := "class=\"nav-item\""
-	divClass := "class=\"nav-link active\""
-	aClass := "class=\"nav-link\""
-	spanClass := "class=\"sr-only\""
+	ulClass := "style=\"display: none;\""
+	liClass := "class=\"folder\""
+	//	divClass := "class=\"active\""
+	//	spanClass := "class=\"sr-only\""
 
 	dir, err := ioutil.ReadDir(current)
 	if err != nil {
 		log.Println(err, "Cannot read file")
 	}
 
-	// start: <ul>
-	*content += fmt.Sprintf("<ul %s>\n", ulClass)
-
+	// start: <div>
 	// only "/"
 	if current == config.RepoName {
-		*content += fmt.Sprintf("<li %s>\n<div %s>Directory Tree<span %s>(current)</span></div>\n</li>", liClass, divClass, spanClass)
+		*content += fmt.Sprintf("<div id=\"tree\" class=\"tree-body\">\n")
+		*content += fmt.Sprintf("<ul %s>\n", ulClass)
+		//		*content += fmt.Sprintf("<li>\n<div %s>Directory Tree<span %s>(current)</span></div>\n</li>", divClass, spanClass)
+	} else {
+		*content += fmt.Sprintf("<ul>\n")
 	}
 
 	rp := strings.Replace(current, config.RepoName, config.SubDir, -1)
@@ -58,17 +59,24 @@ func createDirTree(content *string, current string) {
 			showName = strings.TrimSuffix(showName, filepath.Ext(showName))
 		}
 
-		*content += fmt.Sprintf("<li %s><a %s href=\"%s\">%s</a></li>\n", liClass, aClass, GetFullPath(rp, f.Name()), showName)
 		fInfo, err := os.Stat(filepath.Join(current, f.Name()))
 		if err != nil {
 			log.Println(err, "Cannot check file info")
 		}
+
+		// which Directory or File
 		if fInfo.IsDir() {
+			*content += fmt.Sprintf("<li %s><a target=\"content\" href=\"%s\">%s</a><\n", liClass, GetFullPath(rp, f.Name()), showName)
 			createDirTree(content, path.Join(current, f.Name()))
+		} else {
+			*content += fmt.Sprintf("<li><a target=\"content\" href=\"%s\">%s</a>\n", GetFullPath(rp, f.Name()), showName)
 		}
 	}
 	*content += fmt.Sprintf("</ul>\n")
-	// end: </ul>
+	if current == config.RepoName {
+		*content += fmt.Sprintf("</div>\n")
+	}
+	// end: </div>
 }
 
 func updateDirTree() {

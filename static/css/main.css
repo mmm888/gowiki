@@ -19,44 +19,6 @@ body {
   background-color: #f5f5f5;
 }
 
-/*
- * Sidebar
- */
-
-.sidebar {
-  position: fixed;
-  top: 51px;
-  bottom: 0;
-  left: 0;
-  z-index: 1000;
-  padding: 20px;
-  overflow-x: hidden;
-  overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
-  border-right: 1px solid #eee;
-}
-
-/* Sidebar navigation */
-.sidebar {
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.sidebar .nav {
-  margin-bottom: 20px;
-}
-
-.sidebar .nav-item {
-  width: 100%;
-}
-
-.sidebar .nav-item + .nav-item {
-  margin-left: 0;
-}
-
-.sidebar .nav-link {
-  border-radius: 0;
-}
-
 /* Custom page CSS
 -------------------------------------------------- */
 
@@ -67,4 +29,58 @@ body {
   padding: 0 15px;
 }
 */
+
+
+/*
+ * fancytree
+
+.tree-body {
+	background-color: #39414A;
+	color: white;
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: smaller;
+	background-image: url("nav_bg.png");
+	background-repeat: repeat-x;
+}
+div#tree {
+	position: absolute;
+	height: 95%;
+	width: 95%;
+	padding: 5px;
+	margin-right: 16px;
+}
+ul.fancytree-container {
+	height: 100%;
+	width: 100%;
+	overflow: auto;
+	background-color: transparent;
+}
+span.fancytree-node span.fancytree-title {
+	color: white;
+	text-decoration: none;
+}
+span.fancytree-focused span.fancytree-title {
+	outline-color: white;
+}
+span.fancytree-node:hover span.fancytree-title,
+span.fancytree-active span.fancytree-title,
+span.fancytree-active.fancytree-focused span.fancytree-title,
+.fancytree-treefocus span.fancytree-title:hover,
+.fancytree-treefocus span.fancytree-active span.fancytree-title {
+	color: #39414A;
+}
+span.external span.fancytree-title:after {
+	content: "";
+	background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAMAAAC67D+PAAAAFVBMVEVmmcwzmcyZzP8AZswAZv////////9E6giVAAAAB3RSTlP///////8AGksDRgAAADhJREFUGFcly0ESAEAEA0Ei6/9P3sEcVB8kmrwFyni0bOeyyDpy9JTLEaOhQq7Ongf5FeMhHS/4AVnsAZubxDVmAAAAAElFTkSuQmCC") 100% 50% no-repeat;
+	padding-right: 13px;
+}
+.ui-fancytree.fancytree-container:focus {
+	outline: none;
+}
+.ui-fancytree.fancytree-container {
+	border: none;
+}
+
+ */
+/* Remove system outline for focused container */
 

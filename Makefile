@@ -19,7 +19,7 @@ test: deps
 
 ## Run
 run: deps
-	go run main.go type.go utils.go
+	go run main.go type.go utils.go git.go
 
 ## Help
 help:

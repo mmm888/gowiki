@@ -1,8 +1,10 @@
 # gowiki
 
 * TODO
-  * sidebar: 折りたたみ
   * main.css 編集 (body, h1 ...)
+    * viewtree: 表示を見やすく + 前回の開いている画面を保存
+    * diff 表示画面色付け & diff 表示を見やすくする
+    * delete: 確認画面表示
   * Docker, nginx init
   * render 関数整理
 
@@ -15,8 +17,6 @@
       * http://qiita.com/Qiita/items/c686397e4a0f4f11683d
     * サイドバー作成
       * https://getbootstrap.com/docs/4.0/examples/
-  * diff 表示画面色付け & diff 表示を見やすくする
-  * delete: 確認画面表示
   * 検索 (header: search)
   * リアルタイムプレビュー 
   * /repo /repo/... のルーティングを統一, subdirectory 設定

@@ -305,7 +305,7 @@ func dirPostHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 				updateDirTree()
 				gitCommit(repo.rp)
 				// TODO ファイル名が aaa/bbb.md の時リダイレクトできない
-				http.Redirect(w, r, filepath.Join(repo.vp, filepath.Base(name)), http.StatusFound)
+				http.Redirect(w, r, "/"+filepath.Join(repo.vp, filepath.Base(name)), http.StatusFound)
 			}
 		}
 		gitCommit(repo.rp)
@@ -488,8 +488,9 @@ func ErrorPage(w http.ResponseWriter, r *http.Request) {
 
 // TestHandler is routing of "/test"
 func TestHandler(w http.ResponseWriter, r *http.Request) {
-	//tmpl := template.Must(template.ParseFiles("./test.html"))
-	tmpl := template.Must(template.ParseFiles("./test2.html"))
+	//	tmpl := template.Must(template.ParseFiles("./static/demo/index.html"))
+	tmpl := template.Must(template.ParseFiles("./test.html"))
+	//tmpl := template.Must(template.ParseFiles("./test2.html"))
 	tmpl.Execute(w, nil)
 }
 
