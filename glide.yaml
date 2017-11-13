@@ -1,6 +1,0 @@
-package: github.com/mmm888/gowiki
-import:
-- package: github.com/gorilla/mux
-- package: github.com/russross/blackfriday
-- package: github.com/unrolled/render
-- package: github.com/BurntSushi/toml

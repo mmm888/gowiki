@@ -7,15 +7,15 @@ setup:
 
 ## Install Dependencies
 deps: setup
-	glide install
+	dep ensure
 
 ## Update Dependencies
 update: setup
-	glide update
+	dep ensure -update
 
-## Test
-test: deps
-	go test $$(glide novendor)
+### Test
+#test: deps
+#	go test $$(glide novendor)
 
 ## Run
 run: deps

@@ -214,7 +214,8 @@ func fileHandler(w http.ResponseWriter, r *http.Request, repo Repo) {
 
 		// redirect "edit" when content is ""
 		if string(f) == "" {
-			http.Redirect(w, r, GetFullPath(repo.GetActPath("E")), http.StatusFound)
+			http.Redirect(w, r, GetFullPath(repo.GetActPath("E")), http.StatusSeeOther)
+			return
 		}
 
 		md := blackfriday.MarkdownCommon(f)
