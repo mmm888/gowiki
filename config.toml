@@ -1,4 +1,3 @@
-#BaseURL = "dev01-xenial:8080"
 BaseURL = "localhost:8080"
 RepoName = "wikitest"
 SubDir = "repo"

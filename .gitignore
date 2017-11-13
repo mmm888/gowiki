@@ -5,6 +5,9 @@ vendor/
 wiki/
 wikitest/
 
+# Executable file
+gowiki
+
 # gogland
 .idea
 
